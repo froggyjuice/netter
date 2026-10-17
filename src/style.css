@@ -909,10 +909,11 @@ mark.hl { background: linear-gradient(transparent 35%, #b9e6a0 35%, #b9e6a0 92%,
 :root[data-theme='dark'] canvas { filter: brightness(0.92); }
 
 /* 🐸 개구리: 연잎 무늬 바탕 · 개구리 장식 */
-:root[data-theme='frog'] .brand::after { content: ' 🐸'; }
-/* 위쪽 메뉴 아이콘은 모두 🍀 */
-:root[data-theme='frog'] .mainnav .ico { font-size: 0; }
-:root[data-theme='frog'] .mainnav .ico::before { content: '🍀'; font-size: 1rem; }
+/* 메뉴 · 홈 카드 · 제목 · 게임 탭 앞 이모지는 모두 🍀 */
+:root[data-theme='frog'] :is(.mainnav .ico, h2 > .ico, .tab > .ico, .hub-card .i) { font-size: 0; }
+:root[data-theme='frog'] :is(.mainnav .ico, .tab > .ico)::before { content: '🍀'; font-size: 1rem; }
+:root[data-theme='frog'] h2 > .ico::before { content: '🍀'; font-size: 1.25rem; }
+:root[data-theme='frog'] .hub-card .i::before { content: '🍀'; font-size: 1.6rem; }
 :root[data-theme='dark'] .brag-alert, :root[data-theme='dark'] .dev-badge, :root[data-theme='dark'] .over-badge-desc { color: #f2dca0; border-color: #8a7330; }
 :root[data-theme='dark'] .brag p, :root[data-theme='dark'] .brag-btn { color: #2a2410; }
 :root[data-theme='dark'] .brag p { color: #f2dca0; }

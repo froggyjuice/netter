@@ -227,6 +227,8 @@ function renderTabs(activeId = current.id) {
   );
 }
 
+const PLAY_TAGLINE = '넷볼 규칙을 게임으로 재미있게 배워봐요! o(^ω^ )o';
+const RULES_TAGLINE = 'World Netball「Rules of Netball」2024를 AI가 풀어 쓴 요약이에요. 정확한 원문은 공식 사이트(영문, 무료)에서 확인하세요. ٩(•᎑•)✦';
 function route() {
   if (hlPop) hlPop.hidden = true; // 다른 화면으로 가면 형광펜 버튼 닫기
   const wasPlaying = !els.stage.hidden;
@@ -236,7 +238,10 @@ function route() {
   const hubPage = id === '' || id === 'home' ? 'home' : ['calendar', 'me', 'admin'].includes(id) ? id : null;
   syncNav(hubPage ?? (id.startsWith('rules') ? 'rules' : 'play'));
   els.tabs.hidden = Boolean(hubPage) || id.startsWith('rules');
-  $('#play-tagline').hidden = els.tabs.hidden; // 놀이터 화면에만
+  // 위쪽 메뉴 바로 아래 한 줄: 놀이터 · 넷볼 규칙 사전
+  const tagline = id.startsWith('rules') ? RULES_TAGLINE : els.tabs.hidden ? '' : PLAY_TAGLINE;
+  $('#play-tagline').textContent = tagline;
+  $('#play-tagline').hidden = !tagline;
   if (hubPage) {
     document.body.dataset.page = 'hub';
     document.body.dataset.game = '';
@@ -306,6 +311,29 @@ $('#btn-theme').addEventListener('click', () => {
   store.set('netball.theme', next);
   applyTheme(next, true);
 });
+
+// 🐸 개구리 모드에서 제목 · 게임 탭 앞 이모지를 🍀로 바꿀 수 있게, 맨 앞 이모지를 <span class="ico"> 로 감싼다
+const LEAD_EMOJI = /^(\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*)\s*/u;
+function wrapLeadEmoji() {
+  document.querySelectorAll('h2, .tab').forEach((el) => {
+    const n = el.firstChild;
+    if (n?.nodeType !== Node.TEXT_NODE) return;
+    const m = LEAD_EMOJI.exec(n.data);
+    if (!m) return;
+    const ico = Object.assign(document.createElement('span'), { className: 'ico', textContent: m[1] });
+    n.data = ' ' + n.data.slice(m[0].length);
+    el.insertBefore(ico, n);
+  });
+}
+let wrapQueued = false;
+new MutationObserver(() => {
+  if (wrapQueued) return;
+  wrapQueued = true;
+  setTimeout(() => {
+    wrapQueued = false;
+    wrapLeadEmoji();
+  }, 0);
+}).observe(document.body, { childList: true, subtree: true });
 
 // ---------- 로그인 ----------
 const loginDialog = $('#login-dialog');
@@ -812,7 +840,6 @@ function renderRulesPage(focusNo) {
       <h2>📖 넷볼 규칙 사전</h2>
       <a class="btn small help-btn" href="${OFFICIAL_RULES_URL}" target="_blank" rel="noopener">🌐 공식 규정집 보기</a>
     </div>
-    <p class="muted small">World Netball「Rules of Netball」2024를 AI가 풀어 쓴 요약이에요. 정확한 원문은 공식 사이트(영문, 무료)에서 확인하세요. ٩(•᎑•)✦</p>
     ${todayRuleHtml()}
     <p class="hl-tip small muted">🖍️ 글자를 드래그해서(폰은 길게 눌러) 고르면 형광펜으로 칠할 수 있어요. 칠한 곳을 누르면 지워요. ${hub.saveMode === 'account' ? '내 계정에 저장돼요.' : '이 기기에 저장돼요.'}</p>
     <input class="rule-search" id="rule-search" type="search" placeholder="🔍 찾기 — 예) 3초, 오프사이드, 페널티 패스" aria-label="규칙 찾기" />
