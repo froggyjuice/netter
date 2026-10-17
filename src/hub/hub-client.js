@@ -86,6 +86,9 @@ export function createHubClient(store) {
     isSaveKey: (k) => SAVE_KEYS.includes(k),
     /** 🏆 회장에게 자랑하기 → { ok, already } */
     brag: (kind) => call('/api/me', { method: 'POST', body: { brag: kind } }),
+    // ----- 훈련 캘린더 -----
+    events: () => call('/api/events'),
+    eventAction: (body) => call('/api/events', { method: 'POST', body }),
     /** 운영진이 보낸 축하를 봤다 */
     cheersSeen: () => call('/api/me', { method: 'POST', body: { cheersSeen: true } }),
 
@@ -121,6 +124,11 @@ export const HUB_ERROR_TEXT = {
   too_many: '한 번에 200명까지 등록할 수 있어요.',
   save_too_large: '기록이 너무 커서 저장하지 못했어요.',
   bad_brag: '자랑할 수 없는 항목이에요.',
+  vote_closed: '투표가 마감됐어요.',
+  no_attendees: '참석한 사람이 아직 없어요.',
+  bad_time: '날짜와 시간을 확인해 주세요. (끝은 시작보다 뒤여야 해요)',
+  bad_vote: '참석 · 불참 · 미정 중 하나를 골라 주세요.',
+  not_found: '일정을 찾지 못했어요. 새로고침해 주세요.',
   already_member: '이미 등록된 회원이에요. 그대로 로그인해 주세요.',
   join_done: '이미 처리된 가입 요청이에요.',
   bad_join: '가입 요청을 처리하지 못했어요.',

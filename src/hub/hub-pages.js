@@ -2,6 +2,8 @@
 // ctx: { hub, showToast, onSavesChanged(), openLogin() }
 import { SAVE_LABELS, isEmptySave } from '../shared/save-bundle.js';
 import { HUB_ERROR_TEXT } from './hub-client.js';
+import { homeNotices } from './calendar-page.js';
+import { whenText, ANSWER_LABEL } from '../shared/event-logic.js';
 import { parseDelimited, rowsToMembers, IMPORT_ERROR_TEXT, TEMPLATE_CSV, MAX_IMPORT } from '../shared/member-import.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -21,7 +23,7 @@ export function renderHome(el, { hub, openLogin }) {
     <p class="hub-hello">${me ? `👋 <b>${esc(me.name)}</b>님, 반가워요!` : '👋 반가워요! 동아리 회원은 이름과 전화번호로 로그인할 수 있어요.'}</p>
     ${me ? '' : '<p><button type="button" class="btn primary" id="home-login">🔑 로그인</button></p>'}
     <div class="hub-cards">
-      <a class="hub-card soon" href="#/calendar"><span class="i">📅</span><b>훈련 캘린더</b><small>훈련 일정 · 참석 투표 — 곧 만나요</small></a>
+      <a class="hub-card" href="#/calendar"><span class="i">📅</span><b>훈련 캘린더</b><small>훈련 일정 · 참석 투표</small></a>
       <a class="hub-card" href="#/snake"><span class="i">🎮</span><b>넷볼 놀이터</b><small>존 스네이크 · 리듬 슈팅 · 패스 퍼즐</small></a>
       <a class="hub-card" href="#/rules"><span class="i">📖</span><b>넷볼 규칙 사전</b><small>Rule 1~21 요약</small></a>
       <a class="hub-card" href="#/board"><span class="i">🏆</span><b>랭킹 · 댓글</b><small>놀이터 기록과 한마디</small></a>
@@ -29,6 +31,23 @@ export function renderHome(el, { hub, openLogin }) {
       ${hub.isAdmin() ? '<a class="hub-card" href="#/admin"><span class="i">⚙️</span><b>운영진</b><small>회원 명단 관리</small></a>' : ''}
     </div>`;
   el.querySelector('#home-login')?.addEventListener('click', openLogin);
+  // 📅 다음 훈련 + 취소 · 변경 알림 (로그인 안 해도 일정은 보인다)
+  hub
+    .events()
+    .then((out) => {
+      if (!el.isConnected) return;
+      const { next, mine, notices } = homeNotices(out.events ?? [], out.me);
+      const html = [
+        ...notices.map((e) => `<a class="ev-banner ${e.status === 'cancelled' ? 'bad' : ''}" href="#/calendar">${e.status === 'cancelled' ? '🚫' : '📢'} <b>${esc(whenText(e))} ${esc(e.title)}</b> — ${esc(e.notice)}</a>`),
+        next
+          ? `<a class="ev-next" href="#/calendar">📅 다음 훈련 <b>${esc(whenText(next))}</b>${next.place ? ` · ${esc(next.place)}` : ''}<span class="small">${
+              out.me ? (mine ? `내 투표 ${ANSWER_LABEL[mine.answer]}` : '🗳️ 아직 투표 안 했어요 ›') : `참석 ${next.counts.yes}명`
+            }</span></a>`
+          : '',
+      ].join('');
+      if (html) el.querySelector('.hub-hello')?.insertAdjacentHTML('afterend', `<div class="home-events">${html}</div>`);
+    })
+    .catch(() => {});
   if (!me) return;
   hub
     .me()
@@ -77,18 +96,6 @@ export const BRAG_LABELS = Object.freeze({
   'pass-stars': '🧩 패스 퍼즐 별 전부',
 });
 
-/** 📅 캘린더 (2단계에서 만든다) */
-export function renderCalendar(el) {
-  el.innerHTML = `
-    <div class="intro-head"><h2>📅 훈련 캘린더</h2></div>
-    <p class="dev-badge">🛠️ 다음 단계에서 만들어요</p>
-    <div class="dev-plan"><b>🗺️ 만들 기능</b><ul>
-      <li>월 달력 · 목록으로 훈련 일정 보기, 일정마다 <b>📅 내 캘린더에 추가</b></li>
-      <li>일정별 참석 투표(참석 · 불참 · 미정 + 한마디), 참석 명단은 회원 모두에게 공개</li>
-      <li>운영진이 인원을 확정하면 포지션을 랜덤 배정 (희망 포지션 가능, 7명이 넘으면 넓은 구역 순으로 교체)</li>
-      <li>날짜 정하기 투표 · 카톡 공유 링크 · 출석률 순위(1~3위 공개)</li>
-    </ul></div>`;
-}
 
 /** 👤 내 정보: 놀이터 기록 저장 위치 (이 기기 / 내 계정) 고르기 · 옮기기 */
 export async function renderMe(el, { hub, showToast, onSavesChanged, openLogin }) {

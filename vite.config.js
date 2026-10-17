@@ -10,6 +10,7 @@ const ROUTES = {
   '/api/auth': ['/lib/hub-handler.js', 'handleAuth'],
   '/api/me': ['/lib/hub-handler.js', 'handleMe'],
   '/api/admin': ['/lib/hub-handler.js', 'handleAdmin'],
+  '/api/events': ['/lib/event-handler.js', 'handleEvents'],
 };
 
 function devApi(mode) {

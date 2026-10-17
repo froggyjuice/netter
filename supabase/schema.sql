@@ -135,5 +135,41 @@ alter table public.reports add column if not exists status  text not null defaul
 alter table public.reports add column if not exists note    text check (char_length(note) <= 200);
 alter table public.reports add column if not exists done_at timestamptz;
 
+-- ===== 동아리 허브 2단계: 훈련 캘린더 · 참석 투표 · 포지션 배정 =====
+-- 일정은 운영진만 만든다(하나씩). 참석 명단(이름)은 회원 모두에게, 연락처는 내보내지 않는다.
+create table if not exists public.events (
+  id             bigint generated always as identity primary key,
+  title          text        not null check (char_length(title) between 1 and 40),
+  starts_at      timestamptz not null,
+  ends_at        timestamptz,
+  place          text        check (char_length(place) <= 60),
+  memo           text        check (char_length(memo) <= 300),
+  vote_deadline  timestamptz,                 -- 비우면 시작 시각
+  vote_closed    boolean     not null default false,
+  status         text        not null default 'active' check (status in ('active', 'cancelled')),
+  notice         text        check (char_length(notice) <= 200),   -- 취소 · 변경 알림 (홈 배너)
+  notice_at      timestamptz,
+  confirmed_at   timestamptz,                 -- 운영진이 인원 확정
+  lineup         jsonb,                       -- 포지션 배정 결과 (이름 · id)
+  created_by     bigint      references public.members (id) on delete set null,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+create index if not exists events_starts_idx on public.events (starts_at);
+alter table public.events enable row level security;
+
+create table if not exists public.event_votes (
+  event_id    bigint      not null references public.events (id) on delete cascade,
+  member_id   bigint      not null references public.members (id) on delete cascade,
+  answer      text        not null check (answer in ('yes', 'no', 'maybe')),
+  comment     text        check (char_length(comment) <= 60),
+  wish        text[]      not null default '{}',   -- 희망 포지션 (3개까지)
+  fallback    text        not null default 'random' check (fallback in ('random', 'sub')),
+  by_admin    boolean     not null default false,  -- 운영진이 대신 넣음
+  updated_at  timestamptz not null default now(),
+  primary key (event_id, member_id)
+);
+alter table public.event_votes enable row level security;
+
 -- 첫 운영진(본인) 등록: 이름과 전화번호를 바꿔서 한 번 실행하세요.
 -- insert into public.members (name, phone, role) values ('홍길동', '01012345678', 'admin');
