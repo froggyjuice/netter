@@ -782,17 +782,6 @@ a.rule-link:hover { color: var(--accent); text-decoration-style: solid; }
 .today-text { margin: 10px 2px; font-size: 1.05rem; font-weight: 700; line-height: 1.5; }
 .today-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 
-/* 넷볼 규칙 사전: 책장 왼쪽/오른쪽을 눌러 넘기기 · 마우스를 올리면 화살표 */
-.book-page.turnable { cursor: pointer; }
-.page-hint {
-  position: absolute; z-index: 4; width: 44px; height: 44px; margin-top: -22px; border-radius: 50%;
-  display: grid; place-items: center; pointer-events: none;
-  background: rgba(185, 162, 116, 0.88); color: #fff; font-size: 1.8rem; font-weight: 700; line-height: 1;
-  box-shadow: 0 3px 10px rgba(80, 60, 20, 0.25);
-}
-.page-hint[hidden] { display: none; }
-.page-hint[data-side='next'] { right: -14px; }
-.page-hint[data-side='prev'] { left: -12px; }
 
 /* 🏆 회장에게 자랑하기 */
 .brag { margin: 12px 0 4px; padding: 12px; border-radius: 14px; background: linear-gradient(135deg, #fff4cf, #ffe7d6); text-align: center; }
@@ -808,7 +797,7 @@ a.rule-link:hover { color: var(--accent); text-decoration-style: solid; }
 .new-tag { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 6px; background: #d96464; color: #fff; font-size: 0.7rem; }
 
 /* 넷볼 규칙 사전: 형광펜 · 근거 원문보기 */
-mark.hl { background: linear-gradient(transparent 35%, #fff07a 35%, #fff07a 92%, transparent 92%); color: inherit; padding: 0 1px; cursor: pointer; }
+mark.hl { background: linear-gradient(transparent 35%, #b9e6a0 35%, #b9e6a0 92%, transparent 92%); color: inherit; padding: 0 1px; cursor: pointer; }
 .hl-pop {
   position: absolute; z-index: 50; transform: translateX(-50%); padding: 6px 12px; border: 0; border-radius: 999px;
   background: #3a3a36; color: #fff; font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);

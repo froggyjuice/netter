@@ -783,7 +783,6 @@ function renderRulesPage(focusNo) {
         <p class="muted small" id="rule-empty" hidden>찾는 규칙이 없어요. 다른 낱말로 찾아 봐요.</p>
         <p class="book-foot" id="book-foot"></p>
       </div>
-      <div class="page-hint" id="page-hint" aria-hidden="true" hidden></div>
     </div>
     <nav class="rule-pager" id="rule-pager" aria-label="쪽 넘기기">
       <button type="button" class="pg pg-arrow" id="rule-prev" aria-label="이전 쪽">‹</button>
@@ -940,7 +939,6 @@ function renderRulesPage(focusNo) {
     hidePop();
   };
   // 책장 가운데를 기준으로 오른쪽을 누르면 다음 쪽, 왼쪽을 누르면 이전 쪽 (링크 · 버튼 · 글자 고르기는 빼고)
-  const hint = $('#page-hint');
   const sideOf = (e) => {
     const r = sheet.getBoundingClientRect();
     return e.clientX - r.left < r.width / 2 ? -1 : 1;
@@ -952,23 +950,6 @@ function renderRulesPage(focusNo) {
     const d = sideOf(e);
     if (canTurn(d)) showPage(page + d);
   });
-  // 마우스를 올리면 그쪽에 화살표 (마우스 높이를 따라)
-  const hideHint = () => {
-    hint.hidden = true;
-    sheet.classList.remove('turnable');
-  };
-  sheet.addEventListener('pointermove', (e) => {
-    if (e.pointerType !== 'mouse') return;
-    const d = sideOf(e);
-    if (onControl(e) || !canTurn(d)) return hideHint();
-    const top = e.clientY - book.getBoundingClientRect().top;
-    hint.hidden = false;
-    hint.dataset.side = d > 0 ? 'next' : 'prev';
-    hint.textContent = d > 0 ? '›' : '‹';
-    hint.style.top = `${Math.round(top)}px`;
-    sheet.classList.add('turnable');
-  });
-  sheet.addEventListener('pointerleave', hideHint);
   els.intro.querySelectorAll('#rule-pager [data-page]').forEach((b) => b.addEventListener('click', () => showPage(Number(b.dataset.page))));
   $('#rule-prev').addEventListener('click', () => showPage(page - 1));
   $('#rule-next').addEventListener('click', () => showPage(page + 1));
