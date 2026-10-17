@@ -1,7 +1,7 @@
 {
   "name": "Netter",
   "short_name": "Netter",
-  "description": "넷볼 포지션별 이동 구역을 게임으로 익혀요. (비공식 학습용)",
+  "description": "네터인을 위한 훈련 도우미 — 훈련 캘린더 · 넷볼 규칙 게임 · 넷볼 규칙 사전",
   "lang": "ko",
   "start_url": "/",
   "scope": "/",
