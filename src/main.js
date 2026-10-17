@@ -284,6 +284,28 @@ function syncNav(section) {
   document.querySelectorAll('#mainnav a').forEach((a) => a.setAttribute('aria-current', a.dataset.nav === section ? 'page' : 'false'));
 }
 
+// ---------- 화면 모드: ☀️ 밝게 · 🌙 어둡게 · 🐸 개구리 (이 기기에 저장, 처음엔 기기 설정을 따름) ----------
+const THEMES = [
+  { id: 'light', icon: '☀️', name: '밝게', color: '#4a8559' },
+  { id: 'dark', icon: '🌙', name: '어둡게', color: '#24402b' },
+  { id: 'frog', icon: '🐸', name: '개구리', color: '#3f8f3a' },
+];
+function applyTheme(id, announce = false) {
+  const t = THEMES.find((x) => x.id === id) ?? THEMES[0];
+  document.documentElement.dataset.theme = t.id;
+  $('#btn-theme').textContent = t.icon;
+  $('#btn-theme').setAttribute('aria-label', `화면 모드: ${t.name} (눌러서 바꾸기)`);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t.color);
+  if (announce) showToast(`${t.icon} ${t.name} 모드`, 'good', 1500);
+}
+applyTheme(document.documentElement.dataset.theme);
+$('#btn-theme').addEventListener('click', () => {
+  const i = THEMES.findIndex((x) => x.id === document.documentElement.dataset.theme);
+  const next = THEMES[(i + 1) % THEMES.length].id;
+  store.set('netball.theme', next);
+  applyTheme(next, true);
+});
+
 // ---------- 로그인 ----------
 const loginDialog = $('#login-dialog');
 /** 위쪽 버튼: 로그인 전 '🔑 로그인', 로그인 후 '👤 이름' (내 정보로) */
