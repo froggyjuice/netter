@@ -28,7 +28,7 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   color: var(--ink);
-  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  font-family: 'Netter', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
   line-height: 1.6;
   background-color: var(--bg);
   /* 코트 바닥의 흰 라인 느낌 */

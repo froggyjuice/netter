@@ -33,4 +33,4 @@ export const THEME = Object.freeze({
 
 export const hex = (n) => `#${n.toString(16).padStart(6, '0')}`;
 
-export const FONT = "'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif";
+export const FONT = "'Netter', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif";

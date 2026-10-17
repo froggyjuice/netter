@@ -22,6 +22,7 @@
 - 백엔드: Vercel 서버리스 함수 `api/*.js` → `lib/*-handler.js` → Supabase(Postgres, service_role 키로 서버에서만 접근)
 - 로컬: Supabase 없이 `.data/*.json` 파일에 저장 (`npm run dev` 가 `/api/*` 도 같은 로직으로 처리)
 - 규칙 로직은 화면과 분리한 순수 함수(`*-logic.js`)이고 `node:test` 로 검사합니다.
+- 글꼴: 본문 고운돋움 · 굵은 글씨(제목 · 버튼) 주아 (둘 다 OFL, `@fontsource` 로 사이트에 함께 묶어 외부 서버 없이). 한 이름 `Netter` 로 합친 `src/fonts.css` 는 `node scripts/make-fonts.mjs` 로 만듭니다.
 
 ## 1. 로컬 실행
 

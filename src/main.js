@@ -1,5 +1,7 @@
 // 허브: 탭 · 게임 설명 카드 · 시작 → 게임 → 결과/닉네임 등록 · 리더보드
+import './fonts.css';
 import './style.css';
+import { FONT } from './shared/theme.js';
 import { installErrorLogging } from './shared/error-log.js';
 import { createHubClient, HUB_ERROR_TEXT } from './hub/hub-client.js';
 import { renderHome, renderCalendar, renderMe, renderAdmin } from './hub/hub-pages.js';
@@ -1001,6 +1003,18 @@ function togglePause() {
   else if (isPass()) audio.startMusic('puzzle'); // 리듬 슈팅은 배경음악 대신 박자 소리
 }
 
+/**
+ * 게임 코드 + 게임 화면(캔버스) 글꼴을 함께 준비한다.
+ * 캔버스 글씨는 한 번 그리면 다시 그리지 않으므로, 굵은 글꼴(주아)을 먼저 받아 둔다. 느리면 1.5초 뒤 기본 글꼴로 진행.
+ */
+const CANVAS_TEXT = '골서클센터드공격수비슛패스시작준비잘했어요좋아요아웃반칙파울다시점수콤보스테이지 0123456789GSAWCDK!?';
+function loadWithFonts(game) {
+  const fonts = document.fonts?.load
+    ? Promise.race([document.fonts.load(`700 20px ${FONT}`, CANVAS_TEXT), new Promise((r) => setTimeout(r, 1500))]).catch(() => {})
+    : null;
+  return Promise.all([game.load(), fonts]).then(([start]) => start);
+}
+
 async function startGame(choicePos, choiceMode) {
   if (isRhythm()) return startRhythm(choicePos);
   if (isPass()) return startPassStage(choicePos);
@@ -1025,7 +1039,7 @@ async function startGame(choicePos, choiceMode) {
 
   let start;
   try {
-    start = await current.load();
+    start = await loadWithFonts(current);
   } catch (err) {
     errorLog.report({ kind: 'load', message: `게임 불러오기 실패(${current.id}): ${err?.message ?? err}`, stack: err?.stack });
     showToast('게임을 불러오지 못했어요. 새로고침 해주세요.', 'bad');
@@ -1186,7 +1200,7 @@ async function startPassStage(stageId) {
   fitCourt(); // 설명 높이까지 빼고 코트 크기를 맞춘다
   let start;
   try {
-    start = await current.load();
+    start = await loadWithFonts(current);
   } catch (err) {
     errorLog.report({ kind: 'load', message: `게임 불러오기 실패(${current.id}): ${err?.message ?? err}`, stack: err?.stack });
     showToast('게임을 불러오지 못했어요. 새로고침 해주세요.', 'bad');
@@ -1314,7 +1328,7 @@ async function startRhythm(choicePos) {
   showToast('불러오는 중…');
   let start;
   try {
-    start = await current.load();
+    start = await loadWithFonts(current);
   } catch (err) {
     errorLog.report({ kind: 'load', message: `게임 불러오기 실패(${current.id}): ${err?.message ?? err}`, stack: err?.stack });
     showToast('게임을 불러오지 못했어요. 새로고침 해주세요.', 'bad');
