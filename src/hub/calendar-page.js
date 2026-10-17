@@ -2,7 +2,7 @@
 // ctx: { hub, showToast, openLogin }
 import { HUB_ERROR_TEXT } from './hub-client.js';
 import {
-  ANSWER_LABEL, ANSWERS, LIMITS, PLACES, voteOpen, deadlineOf, summarize, dayKey, whenText, toLocalInput, fromLocalInput, monthCells, icsFor, googleCalendarUrl, shareText,
+  ANSWER_LABEL, ANSWERS, LIMITS, PLACES, DEFAULT_TITLE, voteOpen, deadlineOf, summarize, dayKey, whenText, toLocalInput, fromLocalInput, monthCells, icsFor, googleCalendarUrl, shareText,
 } from '../shared/event-logic.js';
 import { COURT, defaultTeams } from '../shared/position-assign.js';
 
@@ -26,7 +26,7 @@ export async function renderCalendar(el, { hub, showToast, openLogin }) {
     ${hub.session ? '' : '<p class="small">🔑 <a href="#" id="cal-login">로그인</a>하면 참석 투표와 참석 명단을 볼 수 있어요.</p>'}
     <form class="ev-form" id="ev-form" hidden>
       <h3 id="ev-form-title">➕ 일정 만들기</h3>
-      <label>제목 <input id="f-title" maxlength="${LIMITS.title}" placeholder="훈련" /></label>
+      <label>제목 <input id="f-title" maxlength="${LIMITS.title}" placeholder="${DEFAULT_TITLE}" /></label>
       <label>날짜 · 시간 <input id="f-start" type="datetime-local" required /></label>
       <label>장소 <select id="f-place-pick">${PLACES.map((p) => `<option value="${p}">${p}</option>`).join('')}<option value="">그 외 (직접 적기)</option></select></label>
       <label id="f-place-row" hidden>장소 직접 적기 <input id="f-place" maxlength="${LIMITS.place}" placeholder="예) ○○공원 농구장" /></label>
@@ -306,7 +306,7 @@ export async function renderCalendar(el, { hub, showToast, openLogin }) {
     editing = e;
     form.hidden = false;
     $('#ev-form-title').textContent = e ? '✏️ 일정 수정' : '➕ 일정 만들기';
-    $('#f-title').value = e?.title ?? '훈련';
+    $('#f-title').value = e?.title ?? DEFAULT_TITLE;
     $('#f-start').value = toLocalInput(e?.starts_at);
     // 장소: 목록에 있으면 고르고, 없으면 '그 외'에 직접 적기 (새 일정은 체육관)
     const place = e ? e.place ?? '' : PLACES[0];

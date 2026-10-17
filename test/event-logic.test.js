@@ -15,8 +15,8 @@ test('투표 마감: 기본은 훈련 시작 2시간 전, 운영진이 닫거나
   assert.ok(!voteOpen({ ...EV, vote_deadline: '2026-10-20T00:00:00Z' }, Date.parse('2026-10-20T01:00:00Z')));
 });
 
-test('일정 입력 정리: 제목 기본 훈련, 시간 확인, 끝 < 시작이면 오류', () => {
-  assert.deepEqual(cleanEvent({ starts_at: '2026-10-21T10:00:00Z' }).value, { title: '훈련', starts_at: '2026-10-21T10:00:00.000Z', ends_at: null, place: null, memo: null, vote_deadline: null });
+test('일정 입력 정리: 제목 기본 목요 정기 훈련, 시간 확인, 끝 < 시작이면 오류', () => {
+  assert.deepEqual(cleanEvent({ starts_at: '2026-10-21T10:00:00Z' }).value, { title: '목요 정기 훈련', starts_at: '2026-10-21T10:00:00.000Z', ends_at: null, place: null, memo: null, vote_deadline: null });
   assert.equal(cleanEvent({ starts_at: 'nope' }).error, 'bad_time');
   assert.equal(cleanEvent({ starts_at: '2026-10-21T10:00:00Z', ends_at: '2026-10-21T09:00:00Z' }).error, 'bad_time');
   assert.deepEqual(cleanEvent({ place: '  새 체육관 ' }, { partial: true }).value, { place: '새 체육관' });

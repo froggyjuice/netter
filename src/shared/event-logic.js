@@ -4,6 +4,8 @@ import { COURT } from './position-assign.js';
 export const ANSWERS = Object.freeze(['yes', 'no', 'maybe']);
 export const ANSWER_LABEL = Object.freeze({ yes: '✅ 참석', no: '❌ 불참', maybe: '🤔 미정' });
 export const FALLBACKS = Object.freeze(['random', 'sub']);
+/** 일정 제목을 비우면 */
+export const DEFAULT_TITLE = '목요 정기 훈련';
 export const LIMITS = Object.freeze({ title: 40, place: 60, memo: 300, comment: 60, notice: 200, wish: 3 });
 const KST = 9 * 3_600_000;
 
@@ -28,7 +30,7 @@ export function voteOpen(ev, now = Date.now()) {
 export function cleanEvent(input, { partial = false } = {}) {
   const v = {};
   const has = (k) => input?.[k] !== undefined;
-  if (!partial || has('title')) v.title = str(input?.title, LIMITS.title) || '훈련';
+  if (!partial || has('title')) v.title = str(input?.title, LIMITS.title) || DEFAULT_TITLE;
   if (!partial || has('starts_at')) {
     v.starts_at = time(input?.starts_at);
     if (!v.starts_at) return { ok: false, error: 'bad_time' };
