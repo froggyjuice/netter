@@ -810,3 +810,16 @@ mark.hl { background: linear-gradient(transparent 35%, #b9e6a0 35%, #b9e6a0 92%,
 .rule-src q { font-style: italic; color: #5b5b55; }
 .rule-src q::before { content: '“'; }
 .rule-src q::after { content: '…”'; }
+
+/* 운영진: 가입 승인 요청 · 받은 메시지 */
+.admin-box { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); }
+.admin-box h3 { margin: 0 0 6px; font-size: 1rem; }
+.admin-box h3 small { color: #b54a4a; margin-left: 6px; }
+.admin-box ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.admin-box li { padding: 8px 10px; border-radius: 10px; background: var(--tab); }
+.admin-acts { display: inline-flex; gap: 6px; margin-left: 6px; vertical-align: middle; }
+.report-tabs { display: flex; gap: 6px; margin: 0 0 8px; }
+.report-text { margin: 4px 0; white-space: pre-wrap; word-break: break-word; }
+.report-acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.report-note { flex: 1 1 160px; font: inherit; font-size: 0.85rem; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); }
+.join-box { margin: 4px 0 10px; padding: 10px; border-radius: 12px; background: var(--tab); display: grid; gap: 6px; }

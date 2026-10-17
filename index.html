@@ -160,6 +160,11 @@
           <label>이름 <input id="login-name" autocomplete="name" maxlength="20" required /></label>
           <label>휴대폰 번호 <input id="login-phone" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000" required /></label>
           <p class="small" id="login-msg" aria-live="polite"></p>
+          <div class="join-box" id="join-box" hidden>
+            <p class="small">📝 아직 등록되지 않았다면 운영진에게 <b>가입 승인 요청</b>을 보낼 수 있어요. 승인되면 이 이름 + 번호로 바로 로그인돼요.</p>
+            <label>운영진에게 한마디 (선택) <input id="join-message" maxlength="100" placeholder="예) 수요일 반 새로 온 ○○예요" /></label>
+            <button class="btn small" id="join-send" type="button">📝 가입 승인 요청 보내기</button>
+          </div>
           <div class="row">
             <button class="btn ghost" id="login-cancel" type="button">닫기</button>
             <button class="btn primary" id="login-send" type="submit">로그인</button>

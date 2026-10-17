@@ -110,5 +110,25 @@ create table if not exists public.brags (
 
 alter table public.brags enable row level security;
 
+-- 가입 승인 요청: 등록되지 않은 이름 + 전화번호로 로그인하려던 사람이 보낸다. 운영진이 승인하면 바로 회원이 된다.
+create table if not exists public.join_requests (
+  id          bigint generated always as identity primary key,
+  name        text        not null check (char_length(name) between 1 and 20),
+  phone       text        not null check (phone ~ '^01[0-9]{8,9}
+-- insert into public.members (name, phone, role) values ('홍길동', '01012345678', 'admin');
+),
+  message     text        check (char_length(message) <= 100),
+  status      text        not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  created_at  timestamptz not null default now(),
+  decided_at  timestamptz
+);
+
+alter table public.join_requests enable row level security;
+
+-- 받은 메시지(reports) 처리 상태: 운영진 화면에서 '처리 완료'로 바꾸고 메모를 남긴다
+alter table public.reports add column if not exists status  text not null default 'new' check (status in ('new', 'done'));
+alter table public.reports add column if not exists note    text check (char_length(note) <= 200);
+alter table public.reports add column if not exists done_at timestamptz;
+
 -- 첫 운영진(본인) 등록: 이름과 전화번호를 바꿔서 한 번 실행하세요.
 -- insert into public.members (name, phone, role) values ('홍길동', '01012345678', 'admin');

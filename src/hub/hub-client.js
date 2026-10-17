@@ -53,6 +53,8 @@ export function createHubClient(store) {
       return session.member;
     },
     logout,
+    /** 등록 안 된 이름 + 번호로 가입 승인 요청 → { ok, already } */
+    requestJoin: (name, phone, message) => call('/api/auth', { method: 'POST', body: { name, phone, join: true, message } }),
     /** 서버의 내 정보로 이름·역할을 새로 고친다 */
     async me() {
       const out = await call('/api/me');
@@ -93,6 +95,10 @@ export function createHubClient(store) {
     adminBulk: (code, members) => call('/api/admin', { method: 'POST', body: { members }, adminCode: code }),
     /** 자랑 목록을 봤다 (홈 알림 끄기) */
     adminBragsSeen: (code) => call('/api/admin', { method: 'PATCH', body: { bragsSeen: true }, adminCode: code }),
+    /** 받은 메시지 처리: status 'new' | 'done', note (선택) */
+    adminReport: (code, id, status, note) => call('/api/admin', { method: 'PATCH', body: { report: id, status, ...(note !== undefined ? { note } : {}) }, adminCode: code }),
+    /** 가입 요청: action 'approve' | 'reject' */
+    adminJoin: (code, id, action, role = 'member') => call('/api/admin', { method: 'PATCH', body: { join: id, action, role }, adminCode: code }),
   };
 }
 
@@ -111,5 +117,9 @@ export const HUB_ERROR_TEXT = {
   too_many: '한 번에 200명까지 등록할 수 있어요.',
   save_too_large: '기록이 너무 커서 저장하지 못했어요.',
   bad_brag: '자랑할 수 없는 항목이에요.',
+  already_member: '이미 등록된 회원이에요. 그대로 로그인해 주세요.',
+  join_done: '이미 처리된 가입 요청이에요.',
+  bad_join: '가입 요청을 처리하지 못했어요.',
+  bad_report: '메시지를 처리하지 못했어요.',
   network: '인터넷 연결을 확인해 주세요.',
 };

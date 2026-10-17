@@ -293,6 +293,7 @@ function syncLoginButton() {
 }
 function openLogin() {
   $('#login-msg').textContent = '';
+  $('#join-box').hidden = true;
   $('#login-send').disabled = false;
   if (typeof loginDialog.showModal === 'function') loginDialog.showModal();
   $('#login-name').focus();
@@ -315,6 +316,22 @@ $('#login-form').addEventListener('submit', async (e) => {
   } catch (err) {
     $('#login-msg').textContent = HUB_ERROR_TEXT[err.code] ?? '로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요.';
     $('#login-send').disabled = false;
+    // 등록 안 된 사람이면 가입 승인 요청을 보낼 수 있게
+    $('#join-box').hidden = err.code !== 'not_member';
+    $('#join-send').disabled = false;
+  }
+});
+$('#join-send').addEventListener('click', async () => {
+  $('#join-send').disabled = true;
+  try {
+    const out = await hub.requestJoin($('#login-name').value, $('#login-phone').value, $('#join-message').value);
+    $('#join-box').hidden = true;
+    $('#login-msg').textContent = out.already
+      ? '📝 요청을 새 내용으로 다시 보냈어요. 운영진이 승인하면 이 이름 + 번호로 로그인할 수 있어요.'
+      : '📝 가입 승인 요청을 보냈어요! 운영진이 승인하면 이 이름 + 번호로 로그인할 수 있어요.';
+  } catch (err) {
+    $('#login-msg').textContent = HUB_ERROR_TEXT[err.code] ?? '요청을 보내지 못했어요. 잠시 뒤 다시 시도해 주세요.';
+    $('#join-send').disabled = false;
   }
 });
 window.addEventListener('storage', (e) => {

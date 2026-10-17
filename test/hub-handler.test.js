@@ -190,3 +190,57 @@ test('자랑 테이블이 아직 없어도(SQL 실행 전) 로그인 · 운영�
   assert.equal(adm.status, 200);
   assert.equal(adm.body.brags, null);
 });
+
+test('가입 승인 요청: 등록 안 된 사람 → 운영진이 승인하면 바로 로그인, 거절 · 중복 · 이미 회원', async () => {
+  const store = memoryMemberStore();
+  const hub = createHubHandlers({ store, reportStore: null, env: ENV, now: () => 1e12 });
+  await store.insert({ name: '김운영', phone: '01011112222', role: 'admin' });
+  const auth = async (body, ip = 'x') => hub.handleAuth({ method: 'POST', ip, body });
+  assert.equal((await auth({ name: '새회원', phone: '010-5555-6666' })).body.error, 'not_member');
+  assert.deepEqual((await auth({ name: '새회원', phone: '010-5555-6666', join: true, message: '수요일 반이에요' })).body, { ok: true, already: false });
+  assert.deepEqual((await auth({ name: '새 회원', phone: '01055556666', join: true })).body, { ok: true, already: true }, '같은 번호는 새 요청으로 덮기');
+  assert.equal((await auth({ name: '김운영', phone: '01011112222', join: true })).body.error, 'already_member');
+  await auth({ name: '거절할', phone: '01077778888', join: true });
+
+  const a = (await auth({ name: '김운영', phone: '01011112222' })).body.token;
+  const h = { authorization: `Bearer ${a}`, 'x-admin-code': 'netter' };
+  assert.equal((await hub.handleMe({ method: 'GET', headers: h })).body.new_joins, 2);
+  const joins = (await hub.handleAdmin({ method: 'GET', headers: h })).body.joins;
+  assert.deepEqual(joins.map((j) => [j.name, j.status]), [['거절할', 'pending'], ['새 회원', 'pending']]);
+  const ok = await hub.handleAdmin({ method: 'PATCH', headers: h, body: { join: joins[1].id, action: 'approve' } });
+  assert.equal(ok.body.member.phone, '01055556666');
+  assert.equal(ok.body.join.status, 'approved');
+  assert.equal((await hub.handleAdmin({ method: 'PATCH', headers: h, body: { join: joins[1].id, action: 'approve' } })).body.error, 'join_done');
+  assert.equal((await hub.handleAdmin({ method: 'PATCH', headers: h, body: { join: joins[0].id, action: 'reject' } })).body.join.status, 'rejected');
+  assert.ok((await auth({ name: '새회원', phone: '01055556666' })).body.token, '승인되면 바로 로그인');
+  assert.equal((await hub.handleMe({ method: 'GET', headers: h })).body.new_joins, 0);
+});
+
+test('가입 요청은 같은 IP 1시간에 5번까지', async () => {
+  const hub = createHubHandlers({ store: memoryMemberStore(), reportStore: null, env: ENV, now: () => 1e12 });
+  const codes = [];
+  for (let i = 0; i < 6; i++) codes.push((await hub.handleAuth({ method: 'POST', ip: 'y', body: { name: `요청${i}`, phone: `0109999000${i}`, join: true } })).status);
+  assert.deepEqual(codes, [200, 200, 200, 200, 200, 429]);
+});
+
+test('받은 메시지: 운영진 화면 목록 · 처리 완료 + 메모 · 새 메시지 수', async () => {
+  const { memoryReportStore } = await import('../lib/report-store.js');
+  const reports = memoryReportStore();
+  await reports.insert({ kind: 'bug', message: '버튼이 안 눌려요', meta: { page: 'rules' } });
+  await reports.insert({ kind: 'idea', message: '다크 모드 주세요' });
+  const store = memoryMemberStore();
+  const hub = createHubHandlers({ store, reportStore: reports, env: ENV, now: () => 1e12 });
+  await store.insert({ name: '김운영', phone: '01011112222', role: 'admin' });
+  const a = (await hub.handleAuth({ method: 'POST', ip: 'x', body: { name: '김운영', phone: '01011112222' } })).body.token;
+  const h = { authorization: `Bearer ${a}`, 'x-admin-code': 'netter' };
+  const list = (await hub.handleAdmin({ method: 'GET', headers: h })).body.reports;
+  assert.deepEqual(list.map((r) => [r.id, r.kind, r.status]), [[2, 'idea', 'new'], [1, 'bug', 'new']]);
+  assert.equal((await hub.handleMe({ method: 'GET', headers: h })).body.new_reports, 2);
+  const done = await hub.handleAdmin({ method: 'PATCH', headers: h, body: { report: 1, status: 'done', note: '고쳤어요' } });
+  assert.equal(done.body.report.status, 'done');
+  assert.equal(done.body.report.note, '고쳤어요');
+  assert.ok(done.body.report.done_at);
+  assert.equal((await hub.handleMe({ method: 'GET', headers: h })).body.new_reports, 1);
+  assert.equal((await hub.handleAdmin({ method: 'PATCH', headers: h, body: { report: 1, status: 'weird' } })).body.error, 'bad_report');
+  assert.equal((await hub.handleAdmin({ method: 'PATCH', headers: h, body: { report: 99, status: 'done' } })).status, 404);
+});

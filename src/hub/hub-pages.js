@@ -29,15 +29,20 @@ export function renderHome(el, { hub, openLogin }) {
       ${hub.isAdmin() ? '<a class="hub-card" href="#/admin"><span class="i">⚙️</span><b>운영진</b><small>회원 명단 관리</small></a>' : ''}
     </div>`;
   el.querySelector('#home-login')?.addEventListener('click', openLogin);
-  // 운영진: 아직 안 본 '회장에게 자랑하기'가 있으면 알림
+  // 운영진: 아직 처리 안 한 가입 요청 · 메시지 · 자랑이 있으면 알림
   if (hub.isAdmin()) {
     hub
       .me()
       .then((out) => {
-        if (!(out?.new_brags > 0) || !el.isConnected || el.querySelector('.brag-alert')) return;
+        const parts = [
+          out?.new_joins > 0 && `📝 가입 요청 <b>${out.new_joins}</b>`,
+          out?.new_reports > 0 && `💬 메시지 <b>${out.new_reports}</b>`,
+          out?.new_brags > 0 && `🏆 자랑 <b>${out.new_brags}</b>`,
+        ].filter(Boolean);
+        if (!parts.length || !el.isConnected || el.querySelector('.brag-alert')) return;
         el.querySelector('.hub-hello')?.insertAdjacentHTML(
           'afterend',
-          `<a class="brag-alert" href="#/admin">🏆 새 자랑 <b>${out.new_brags}개</b>가 왔어요! 운영진 화면에서 보기 ›</a>`,
+          `<a class="brag-alert" href="#/admin">🔔 새 소식: ${parts.join(' · ')} — 운영진 화면에서 보기 ›</a>`,
         );
       })
       .catch(() => {});
@@ -191,6 +196,8 @@ export async function renderAdmin(el, { hub, showToast }) {
       <button class="btn small" type="submit">확인</button>
     </form>
     <div id="admin-body" hidden>
+      <section class="admin-box" id="join-list"></section>
+      <section class="admin-box" id="report-list"></section>
       <section class="brag-list" id="brag-list"></section>
       <form class="admin-add" id="admin-add">
         <h3 id="admin-form-title">➕ 회원 등록</h3>
@@ -255,10 +262,103 @@ export async function renderAdmin(el, { hub, showToast }) {
     }`;
     if (fresh) hub.adminBragsSeen(code).catch(() => {});
   };
+  // 📝 가입 승인 요청
+  const needSql = (title, what) => `<h3>${title}</h3><p class="muted small">${what}을(를) 쓰려면 Supabase SQL Editor 에서 schema.sql 의 새 부분을 한 번 실행해 주세요.</p>`;
+  const JOIN_STATUS = { approved: '✅ 승인함', rejected: '✖ 거절함' };
+  const renderJoins = (joins) => {
+    const box = el.querySelector('#join-list');
+    if (joins == null) return void (box.innerHTML = needSql('📝 가입 승인 요청', '가입 승인 요청'));
+    const pending = joins.filter((j) => j.status === 'pending');
+    const done = joins.filter((j) => j.status !== 'pending').slice(0, 10);
+    const row = (j) => `<li data-join="${j.id}" class="${j.status}">
+        <b>${esc(j.name)}</b> · ${fmtPhone(j.phone)} <span class="muted small">${fmtTime(j.created_at)}</span>
+        ${j.message ? `<br /><span class="small">“${esc(j.message)}”</span>` : ''}
+        ${j.status === 'pending'
+          ? `<span class="admin-acts"><button type="button" class="btn small primary" data-join-act="approve">✅ 승인</button><button type="button" class="btn small ghost" data-join-act="reject">✖ 거절</button></span>`
+          : ` <span class="muted small">${JOIN_STATUS[j.status] ?? ''}</span>`}
+      </li>`;
+    box.innerHTML = `<h3>📝 가입 승인 요청 <small>${pending.length ? `대기 ${pending.length}명` : ''}</small></h3>${
+      pending.length ? `<ul>${pending.map(row).join('')}</ul>` : '<p class="muted small">기다리는 요청이 없어요. 등록되지 않은 이름 + 번호로 로그인하려던 사람이 요청하면 여기에 보여요.</p>'
+    }${done.length ? `<details><summary class="small">처리한 요청 ${done.length}개</summary><ul>${done.map(row).join('')}</ul></details>` : ''}`;
+  };
+  el.querySelector('#join-list').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-join-act]');
+    if (!btn) return;
+    const li = btn.closest('[data-join]');
+    const name = li.querySelector('b').textContent;
+    const act = btn.dataset.joinAct;
+    if (!window.confirm(act === 'approve' ? `${name} 님을 회원으로 등록할까요?` : `${name} 님의 요청을 거절할까요?`)) return;
+    btn.disabled = true;
+    try {
+      await hub.adminJoin(code, Number(li.dataset.join), act);
+      showToast(act === 'approve' ? `${name} 님을 회원으로 등록했어요. 이제 로그인할 수 있어요` : `${name} 님의 요청을 거절했어요`, 'good');
+      await load();
+    } catch (err) {
+      showToast(errText(err), 'bad');
+      btn.disabled = false;
+    }
+  });
+
+  // 💬 받은 메시지 (오류 · 아이디어): 새 메시지 / 처리됨, 처리 완료 + 메모
+  let reports = [];
+  let reportTab = 'new';
+  const KIND = { bug: '🐞 오류', idea: '💡 아이디어' };
+  const metaText = (m) => (m ? [m.page && `화면 ${m.page}`, m.position, m.viewport, m.error && `오류: ${m.error}`].filter(Boolean).join(' · ') : '');
+  const renderReports = (list) => {
+    if (list !== undefined) reports = list;
+    const box = el.querySelector('#report-list');
+    if (reports == null || reports.some((r) => r.status === undefined)) return void (box.innerHTML = needSql('💬 받은 메시지', '메시지 처리'));
+    const fresh = reports.filter((r) => r.status === 'new');
+    const shown = reportTab === 'new' ? fresh : reports.filter((r) => r.status === 'done');
+    box.innerHTML = `<h3>💬 받은 메시지 (오류 · 아이디어)</h3>
+      <div class="report-tabs" role="tablist">
+        <button type="button" class="chip" data-rtab="new" aria-pressed="${reportTab === 'new'}">새 메시지 ${fresh.length}</button>
+        <button type="button" class="chip" data-rtab="done" aria-pressed="${reportTab === 'done'}">처리됨 ${reports.length - fresh.length}</button>
+      </div>
+      ${shown.length
+        ? `<ul class="report-items">${shown
+            .map(
+              (r) => `<li data-report="${r.id}">
+                <div><b>${KIND[r.kind] ?? esc(r.kind)}</b> <span class="muted small">${fmtTime(r.created_at)}</span></div>
+                <p class="report-text">${esc(r.message)}</p>
+                ${metaText(r.meta) ? `<p class="muted small">${esc(metaText(r.meta))}</p>` : ''}
+                ${r.status === 'new'
+                  ? `<div class="report-acts"><input class="report-note" maxlength="200" placeholder="메모 (선택) 예) 다음 업데이트에 고침" /><button type="button" class="btn small primary" data-report-act="done">✅ 처리 완료</button></div>`
+                  : `<p class="small">✅ 처리함 ${fmtTime(r.done_at)}${r.note ? ` · 📝 ${esc(r.note)}` : ''} <button type="button" class="btn small ghost" data-report-act="new">↩️ 되돌리기</button></p>`}
+              </li>`,
+            )
+            .join('')}</ul>`
+        : `<p class="muted small">${reportTab === 'new' ? '새 메시지가 없어요 👍' : '처리한 메시지가 아직 없어요.'}</p>`}`;
+  };
+  el.querySelector('#report-list').addEventListener('click', async (e) => {
+    const tab = e.target.closest('[data-rtab]');
+    if (tab) {
+      reportTab = tab.dataset.rtab;
+      return renderReports();
+    }
+    const btn = e.target.closest('[data-report-act]');
+    if (!btn) return;
+    const li = btn.closest('[data-report]');
+    const status = btn.dataset.reportAct;
+    const note = li.querySelector('.report-note')?.value;
+    btn.disabled = true;
+    try {
+      const { report } = await hub.adminReport(code, Number(li.dataset.report), status, status === 'done' ? note ?? '' : undefined);
+      reports = reports.map((r) => (r.id === report.id ? { ...r, ...report } : r));
+      renderReports();
+      showToast(status === 'done' ? '처리 완료로 옮겼어요 ✅' : '새 메시지로 되돌렸어요', 'good');
+    } catch (err) {
+      showToast(errText(err), 'bad');
+      btn.disabled = false;
+    }
+  });
+
   const load = async () => {
     try {
       const out = await hub.adminList(code);
       members = out.members;
+      renderJoins(out.joins);
+      renderReports(out.reports);
       renderBrags(out.brags);
       try {
         sessionStorage.setItem(CODE_KEY, code);
