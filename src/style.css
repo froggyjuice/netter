@@ -290,22 +290,29 @@ body[data-orient='portrait'] .preview-random { aspect-ratio: 4 / 3; }
 .dot.opp { background: #8b6fc4; border-radius: 3px; }
 .dot.roll { background: var(--ball); box-shadow: 5px 0 0 -2px var(--ball), 9px 0 0 -4px var(--ball); margin-right: 10px; }
 
-/* 모바일 방향 버튼: 터치 기기에서만 보인다 */
+/* 모바일 방향 패드(조이스틱): 터치 기기에서만 보인다. 누른 채로 끌면 손잡이가 따라오고 그쪽 화살표가 켜진다 */
 .dpad { display: none; }
 @media (hover: none), (pointer: coarse) {
   .dpad {
-    display: grid; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(2, 56px);
-    gap: 8px; justify-content: center; margin-top: 12px;
+    --pad: 156px;
+    display: block; position: relative; width: var(--pad); height: var(--pad); margin: 12px auto 0; border-radius: 50%;
+    background: radial-gradient(circle, var(--tab) 0 38%, var(--tab-on) 39%); box-shadow: inset 0 0 0 2px var(--line);
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
   }
+  .dpad .knob {
+    position: absolute; left: 50%; top: 50%; width: 38%; height: 38%; transform: translate(0, 0); translate: -50% -50%; border-radius: 50%;
+    background: var(--surface); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18); transition: transform 0.08s ease-out; pointer-events: none;
+  }
+  .dpad.held .knob { transition: none; background: var(--ball); }
   .dpad button {
-    font-size: 1.3rem; border: 0; border-radius: 14px; background: var(--tab-on); color: var(--ink);
-    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+    position: absolute; width: 34%; height: 34%; padding: 0; border: 0; background: transparent; color: var(--ink);
+    font-size: 1.1rem; opacity: 0.55; pointer-events: none;
   }
-  .dpad button:active { background: var(--ball); }
-  .dpad [data-dir='up'] { grid-column: 2; grid-row: 1; }
-  .dpad [data-dir='left'] { grid-column: 1; grid-row: 2; }
-  .dpad [data-dir='down'] { grid-column: 2; grid-row: 2; }
-  .dpad [data-dir='right'] { grid-column: 3; grid-row: 2; }
+  .dpad button.on { opacity: 1; color: var(--ball); }
+  .dpad [data-dir='up'] { left: 33%; top: 0; }
+  .dpad [data-dir='down'] { left: 33%; bottom: 0; }
+  .dpad [data-dir='left'] { left: 0; top: 33%; }
+  .dpad [data-dir='right'] { right: 0; top: 33%; }
 }
 
 /* 리더보드 */
@@ -331,7 +338,7 @@ body[data-orient='portrait'] .preview-random { aspect-ratio: 4 / 3; }
 
 /* 폰 세로 모드: 코트를 세로(1:2)로 세우고 화면 높이에 맞춘다. 방향 버튼은 조금 작게 */
 body[data-orient='portrait'] .canvas-wrap { aspect-ratio: 1 / 2; }
-body[data-orient='portrait'] .dpad { grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(2, 44px); gap: 6px; margin-top: 8px; }
+body[data-orient='portrait'] .dpad { --pad: 140px; margin-top: 8px; }
 body[data-orient='portrait'] .preview canvas { width: auto; max-width: 100%; max-height: 360px; margin: 0 auto; }
 
 /* 폰 가로 모드: 코트가 화면 높이 안에 들어오도록 줄이고, 방향 버튼은 오른쪽에 둔다 */
@@ -343,7 +350,7 @@ body[data-orient='portrait'] .preview canvas { width: auto; max-width: 100%; max
   .hud { margin-bottom: 6px; }
   .play { display: flex; align-items: center; gap: 12px; }
   .canvas-wrap { flex: 0 1 auto; }
-  .dpad { margin-top: 0; flex: 1 0 auto; }
+  .dpad { margin-top: 0; flex: 0 0 auto; }
   .toasts { margin-top: 4px; }
   .overlay { gap: 2px; padding: 6px; }
   .overlay .big { font-size: 1.3rem; margin: 0; }

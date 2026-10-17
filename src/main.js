@@ -1958,13 +1958,58 @@ $('#btn-music').addEventListener('click', () => {
 });
 syncSoundButtons();
 
-// 모바일 방향 버튼
-$('#dpad').addEventListener('pointerdown', (e) => {
-  const btn = e.target.closest('button[data-dir]');
-  if (!btn) return;
-  e.preventDefault();
-  ctl?.input(btn.dataset.dir);
-});
+// 모바일 방향 패드 (조이스틱): 패드 어디든 누른 채로 끌면, 가운데에서 손가락 쪽 방향으로 간다.
+// 방향이 바뀔 때만 한 번씩 보내고(같은 방향은 다시 안 보냄), 가운데 가까이는 그대로 둔다.
+{
+  const pad = $('#dpad');
+  const knob = pad.querySelector('.knob');
+  const DEAD = 12; // 이만큼(px)은 움직여야 방향으로 본다 (처음 누를 때는 누른 자리 기준)
+  let pid = null;
+  let dir = null;
+  const show = (x, y, d) => {
+    const r = pad.clientWidth / 2;
+    const len = Math.hypot(x, y) || 1;
+    const k = Math.min(1, (r * 0.55) / len); // 손잡이는 패드 안에서만
+    knob.style.transform = `translate(${x * k}px, ${y * k}px)`;
+    pad.querySelectorAll('button[data-dir]').forEach((b) => b.classList.toggle('on', b.dataset.dir === d));
+  };
+  const steer = (e) => {
+    const box = pad.getBoundingClientRect();
+    const x = e.clientX - (box.left + box.width / 2);
+    const y = e.clientY - (box.top + box.height / 2);
+    const d = Math.hypot(x, y) < DEAD ? dir : Math.abs(x) > Math.abs(y) ? (x > 0 ? 'right' : 'left') : y > 0 ? 'down' : 'up';
+    show(x, y, d);
+    if (d && d !== dir) {
+      dir = d;
+      ctl?.input(d);
+      navigator.vibrate?.(6);
+    }
+  };
+  pad.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    pid = e.pointerId;
+    dir = null;
+    pad.classList.add('held');
+    try {
+      pad.setPointerCapture(e.pointerId); // 패드 밖으로 끌어도 계속 따라가게
+    } catch {
+      /* 지원 안 하면 패드 안에서만 */
+    }
+    steer(e);
+  });
+  pad.addEventListener('pointermove', (e) => {
+    if (e.pointerId === pid) steer(e);
+  });
+  const release = (e) => {
+    if (e.pointerId !== pid) return;
+    pid = null;
+    dir = null;
+    pad.classList.remove('held');
+    show(0, 0, null);
+  };
+  pad.addEventListener('pointerup', release);
+  pad.addEventListener('pointercancel', release);
+}
 
 // 리듬 슈팅 슛·패스 버튼 (누르는 순간 판정되도록 pointerdown)
 $('#rpad').addEventListener('pointerdown', (e) => {
