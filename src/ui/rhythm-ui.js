@@ -131,7 +131,7 @@ export function rhythmHelpHtml() {
       ${defenceRulesHtml('help-d')}
       <p class="controls">① 🧍 멈춤: ↓ · S · K / ② ✋ 블록: ↑ · W · J · Enter</p>
     </section>
-    <p class="controls">🏀 리바운드는 두 모드 모두 <b>아무 버튼이나</b> · 화면 아래 버튼도 돼요<br />일시정지 — 스페이스 키 · ⏸ 버튼 · 🎵 버튼은 박자 소리 켜기/끄기</p>`;
+    <p class="controls">🏀 리바운드는 두 모드 모두 <b>아무 버튼이나</b> · 화면 아래 버튼도 돼요<br />일시정지 — 스페이스 키 · ⏸ 버튼 · 🎵 버튼은 박자에 맞춘 배경음악 켜기/끄기</p>`;
 }
 
 /** 경기 복습 줄: [아이콘, 이름, 값] */
@@ -197,7 +197,7 @@ export function rhythmHooks({ showToast, ruleLog, audio }) {
     showToast(text, 'info', 2200);
   };
   return {
-    onBeat: (n) => audio.beat(n % 4 === 0),
+    onBeat: (n, beatMs) => audio.beat(n, beatMs), // 박자에 맞춘 배경음악 (🎵)
     onWhistle: () => {
       audio.sfx('whistle');
       ruleLog().add('quarters');

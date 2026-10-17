@@ -279,7 +279,7 @@ export function startRhythm({ parent, position, difficulty = 'normal', hooks = {
       for (const ev of events) {
         if (ev.type === 'beat') {
           this.beatAt = this.time.now;
-          hooks.onBeat?.(ev.n);
+          hooks.onBeat?.(ev.n, state.beatMs);
         } else if (ev.type === 'catch') {
           const p = px(ev.at);
           if (ev.penalty) this.popText(p.x, p.y - 26, '페널티 패스!', '#3f63a8');

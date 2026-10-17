@@ -86,17 +86,77 @@ const SFX = {
     for (let i = 0; i < 4; i++) tone(i % 2 ? 2500 : 2750, { at: i * 0.045, dur: 0.05, type: 'square', vol: 0.06 });
   },
   badge: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, { at: i * 0.09, dur: 0.22, type: 'triangle', vol: 0.25 })),
-  // 리듬 슈팅: 박자(메트로놈) · 림에 맞음
-  tick: () => tone(1046, { dur: 0.04, type: 'square', vol: 0.05 }),
-  tickStrong: () => tone(1568, { dur: 0.05, type: 'square', vol: 0.07 }),
+  // 리듬 슈팅: 림에 맞음
   rim: () => tone(180, { dur: 0.16, type: 'triangle', vol: 0.3, slide: 120 }),
   over: () => [523, 392, 330, 262].forEach((f, i) => tone(f, { at: i * 0.16, dur: 0.24, type: 'triangle', vol: 0.22 })),
 };
 
-/** 리듬 슈팅 박자 소리: 배경음악 설정(🎵)을 따른다 */
-export function beat(strong = false) {
+// ---------- 리듬 슈팅 배경음악: 게임 박자(n)마다 한 박씩 연주한다 ----------
+// 게임이 박을 알려 줄 때 그 박의 드럼 · 베이스 · 멜로디를 바로 연주하므로, 쿼터마다 빨라지는 박자에 늘 맞는다.
+// C – Am – F – G 네 마디를 돌고, 멜로디는 그 화음의 음만 써서 어디서 끊겨도 어울린다.
+const GROOVE_CHORDS = [
+  ['C3', 'E4', 'G4', 'C5'],
+  ['A2', 'C4', 'E4', 'A4'],
+  ['F2', 'A3', 'C4', 'F4'],
+  ['G2', 'B3', 'D4', 'G4'],
+];
+// 마디마다 8분음표 8개: 화음의 몇 번째 음(1~3)을 칠지, null 은 쉼
+const GROOVE_MELODY = [
+  [3, null, 2, 1, 2, null, 3, 2],
+  [1, 2, 3, null, 2, 1, 2, null],
+  [3, 2, 1, 2, 3, null, null, 2],
+  [2, null, 1, 2, 3, 2, 1, null],
+];
+let noiseBuf = null;
+/** 잡음 한 번 (하이햇 · 스네어) */
+function noise(at, dur, vol, { type = 'highpass', freq = 7000 } = {}) {
+  if (!noiseBuf) {
+    noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.4), ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const t = ctx.currentTime + at;
+  const src = ctx.createBufferSource();
+  src.buffer = noiseBuf;
+  const f = ctx.createBiquadFilter();
+  f.type = type;
+  f.frequency.value = freq;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(f).connect(g).connect(musicBus);
+  src.start(t);
+  src.stop(t + dur + 0.02);
+}
+
+/**
+ * 리듬 슈팅: n번째 박 (0부터, 4박 = 한 마디)의 음악. beatMs: 지금 한 박의 길이(ms).
+ * 배경음악 설정(🎵)을 따른다 (끄면 아무 소리도 내지 않는다).
+ */
+export function beat(n = 0, beatMs = 500) {
   if (!settings.music || !ensure() || ctx.state !== 'running') return;
-  SFX[strong ? 'tickStrong' : 'tick']();
+  const s = beatMs / 1000;
+  const half = s / 2;
+  const b = ((n % 4) + 4) % 4;
+  const bar = Math.floor(n / 4);
+  const chord = GROOVE_CHORDS[((bar % 4) + 4) % 4];
+  const bus = musicBus;
+  // 드럼: 1 · 3박 킥, 2 · 4박 스네어, 8분음표 하이햇
+  if (b === 0 || b === 2) tone(150, { dur: 0.16, type: 'sine', vol: 0.55, slide: 45, bus });
+  else noise(0, 0.13, 0.22, { type: 'bandpass', freq: 1800 });
+  noise(0, 0.035, 0.05);
+  noise(half, 0.03, 0.04);
+  // 베이스: 박마다 근음, 반 박 뒤 한 옥타브 위
+  tone(N[chord[0]], { dur: half * 0.9, type: 'triangle', vol: 0.16, bus });
+  tone(N[chord[0]] * 2, { at: half, dur: half * 0.8, type: 'triangle', vol: 0.09, bus });
+  // 멜로디: 8분음표 두 개
+  const pat = GROOVE_MELODY[((bar % 4) + 4) % 4];
+  for (const k of [0, 1]) {
+    const idx = pat[b * 2 + k];
+    if (idx != null) tone(N[chord[idx]], { at: k * half, dur: half * 0.85, type: 'square', vol: 0.032, bus });
+  }
+  // 마디 첫 박: 부드러운 화음을 깔아 박의 시작을 알려 준다
+  if (b === 0) for (const c of chord.slice(1)) tone(N[c], { dur: s * 3.6, type: 'sine', vol: 0.028, bus });
 }
 
 export function sfx(name) {
@@ -105,7 +165,7 @@ export function sfx(name) {
 }
 
 // ---------- 배경음악: 직접 만든 짧은 8비트풍 루프 (C장조, 120BPM, 8분음표) ----------
-const N = { C3: 131, D3: 147, G2: 98, A2: 110, F2: 87, C4: 262, D4: 294, E4: 330, F4: 349, G4: 392, A4: 440, C5: 523, D5: 587, E5: 659 };
+const N = { C3: 131, D3: 147, G2: 98, A2: 110, F2: 87, A3: 220, B3: 247, C4: 262, D4: 294, E4: 330, F4: 349, G4: 392, A4: 440, C5: 523, D5: 587, E5: 659 };
 const MELODY = [
   'E4', 'G4', 'C5', 'G4', 'A4', 'G4', 'E4', null, 'D4', 'E4', 'G4', 'E4', 'D4', 'C4', 'D4', null,
   'E4', 'G4', 'C5', 'D5', 'E5', 'D5', 'C5', null, 'A4', 'G4', 'E4', 'G4', 'D4', 'E4', 'C4', null,

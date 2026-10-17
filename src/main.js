@@ -1270,7 +1270,7 @@ function togglePause() {
   showPaused(on);
   if (on) audio.stopMusic();
   else if (current.id === 'snake') audio.startMusic();
-  else if (isPass()) audio.startMusic('puzzle'); // 리듬 슈팅은 배경음악 대신 박자 소리
+  else if (isPass()) audio.startMusic('puzzle'); // 리듬 슈팅은 게임 박자에 맞춘 배경음악(audio.beat)
 }
 
 /**

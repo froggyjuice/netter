@@ -167,11 +167,11 @@ export function startRhythmPractice({ root, mode, difficulty, audio }) {
     }
     const end = defence ? cycle.releaseAt : cycle.perfectAt;
     if (cycle.done && now > end + beat * 1.5) newCycle(now);
-    // 박자 소리
+    // 박자에 맞춘 배경음악
     const b = Math.floor((now - t0) / beat);
     if (b !== lastBeat) {
       lastBeat = b;
-      audio.beat(b % 4 === 0);
+      audio.beat(b, beat);
     }
   }
 
