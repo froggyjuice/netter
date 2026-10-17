@@ -2,45 +2,7 @@
 // 게임 캐릭터(애벌레 · 유령 · 공)는 shared/sprites.js 를 캔버스 2D로 그대로 쓴다.
 import { THEME, hex, FONT } from '../shared/theme.js';
 import { drawFace, drawGhost, drawBall } from '../shared/sprites.js';
-
-const W = 720;
-const H = 360;
-
-/** sprites.js 가 쓰는 Phaser Graphics 메서드를 캔버스 2D로 */
-function graphics(ctx) {
-  const col = (c, a = 1) => {
-    const h = hex(c);
-    return `rgba(${parseInt(h.slice(1, 3), 16)},${parseInt(h.slice(3, 5), 16)},${parseInt(h.slice(5, 7), 16)},${a})`;
-  };
-  return {
-    fillStyle(c, a) {
-      ctx.fillStyle = col(c, a);
-    },
-    lineStyle(w, c, a) {
-      ctx.lineWidth = w;
-      ctx.strokeStyle = col(c, a);
-    },
-    fillCircle(x, y, r) {
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-    },
-    strokeCircle(x, y, r) {
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.stroke();
-    },
-    fillRect(x, y, w, h) {
-      ctx.fillRect(x, y, w, h);
-    },
-    lineBetween(x1, y1, x2, y2) {
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-    },
-  };
-}
+import { W, H, graphics, label } from './canvas-kit.js';
 
 /** 코트 일부(가로 x0~x1 칸, 1칸 = cell px): 바탕 · 서드 선 · 골 서클 */
 function court(ctx, { cell = 24, x0 = 0, showGoal = true } = {}) {
@@ -68,21 +30,6 @@ function court(ctx, { cell = 24, x0 = 0, showGoal = true } = {}) {
   ctx.strokeStyle = hex(THEME.border);
   ctx.lineWidth = 4;
   ctx.strokeRect(2, 2, W - 4, H - 4);
-}
-
-function label(ctx, text, x, y, { size = 15, color = hex(THEME.ink), bg = 'rgba(255,255,255,0.92)', align = 'center' } = {}) {
-  ctx.font = `bold ${size}px ${FONT}`;
-  ctx.textAlign = align;
-  ctx.textBaseline = 'middle';
-  const w = ctx.measureText(text).width + 16;
-  const bx = align === 'center' ? x - w / 2 : x - 8;
-  ctx.fillStyle = bg;
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(bx, y - size * 0.85, w, size * 1.7, 8);
-  else ctx.rect(bx, y - size * 0.85, w, size * 1.7);
-  ctx.fill();
-  ctx.fillStyle = color;
-  ctx.fillText(text, x, y + 1);
 }
 
 /** 화면 아래 선택 버튼 줄 (게임에서 고를 것) */

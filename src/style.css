@@ -773,3 +773,11 @@ a.rule-link:hover { color: var(--accent); text-decoration-style: solid; }
 .bulk-file { cursor: pointer; }
 .bulk .admin-table tr.bad { color: var(--bad); }
 .bulk #bulk-result { margin-top: 8px; }
+
+/* 넷볼 규칙 사전: 오늘의 규칙 한 줄 */
+.today-rule { margin: 10px 0 12px; padding: 12px; border-radius: 16px; background: #fffaf0; border: 2px solid #ecdcb4; }
+.today-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+.today-head h3 { margin: 0; font-size: 1.05rem; }
+.today-scene { display: block; width: 100%; height: auto; aspect-ratio: 2 / 1; border-radius: 12px; background: #eef5ea; }
+.today-text { margin: 10px 2px; font-size: 1.05rem; font-weight: 700; line-height: 1.5; }
+.today-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }

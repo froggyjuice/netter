@@ -19,6 +19,8 @@ import { setupInstall } from './ui/install.js';
 import { RULEBOOK, OFFICIAL_RULES_URL, searchRules, chapterOf } from './shared/rulebook.js';
 import { linkifyRules } from './ui/rule-links.js';
 import { drawDevPreview } from './ui/dev-preview.js';
+import { drawRuleSceneReady } from './ui/rule-scenes.js';
+import { ruleOfDay, dayLabel } from './shared/daily-rule.js';
 import { startSnakeTaste } from './ui/snake-taste.js';
 import { startRhythmPractice } from './ui/rhythm-practice.js';
 import { PASS_STAGES } from './games/pass-stages.js';
@@ -759,6 +761,7 @@ function renderRulesPage(focusNo) {
       <a class="btn small help-btn" href="${OFFICIAL_RULES_URL}" target="_blank" rel="noopener">🌐 공식 규정집 보기</a>
     </div>
     <p class="muted small">World Netball「Rules of Netball」2024를 Netter가 직접 풀어 쓴 요약이에요. 정확한 원문은 공식 사이트(영문, 무료)에서 확인하세요.</p>
+    ${todayRuleHtml()}
     <input class="rule-search" id="rule-search" type="search" placeholder="🔍 찾기 — 예) 3초, 오프사이드, 페널티 패스" aria-label="규칙 찾기" />
     <div class="book" id="book">
       <div class="book-page" id="book-page">
@@ -772,6 +775,7 @@ function renderRulesPage(focusNo) {
       ${pages.map((p, i) => `<button type="button" class="pg" data-page="${i}" title="${range(p)}" aria-label="${i + 1}쪽 (${range(p)})">${i + 1}</button>`).join('')}
       <button type="button" class="pg pg-arrow" id="rule-next" aria-label="다음 쪽">›</button>
     </nav>`;
+  setupTodayRule(focusNo);
   const list = $('#rule-list');
   const sheet = $('#book-page');
   const book = $('#book');
@@ -881,6 +885,63 @@ function renderRulesPage(focusNo) {
     }, 0);
   } else {
     window.scrollTo(0, 0);
+  }
+}
+
+// ---------- 오늘의 규칙 한 줄 (넷볼 규칙 사전 맨 위) ----------
+let today = null;
+let todayFile = null; // 공유할 장면 그림 (누르는 순간 바로 공유하려고 미리 만든다)
+function todayRuleHtml() {
+  today = ruleOfDay();
+  return `
+    <section class="today-rule" aria-labelledby="today-title">
+      <div class="today-head"><h3 id="today-title">📌 오늘의 규칙 한 줄</h3><span class="muted small">${dayLabel(today.day)}</span></div>
+      <canvas class="today-scene" id="today-scene" width="720" height="360" role="img" aria-label="애벌레로 그린 장면: ${today.text}"></canvas>
+      <p class="today-text">${today.text}</p>
+      <div class="today-acts">
+        <a class="btn small ghost" id="today-more" href="#/rules/${today.rule}">📖 Rule ${today.rule} 자세히</a>
+        <button type="button" class="btn small primary" id="today-share">💬 카톡으로 공유</button>
+      </div>
+    </section>`;
+}
+function setupTodayRule(focusNo) {
+  const canvas = $('#today-scene');
+  todayFile = null;
+  drawRuleSceneReady(canvas, today.scene).then((ok) => {
+    if (!ok) return canvas.remove();
+    canvas.toBlob((blob) => {
+      if (blob) todayFile = new File([blob], 'netter-오늘의-규칙.png', { type: 'image/png' });
+    }, 'image/png');
+  });
+  // 이미 그 규칙을 보고 있으면 주소가 같아 이동이 없으니, 직접 그 규칙으로
+  $('#today-more').addEventListener('click', (e) => {
+    if (focusNo !== today.rule) return;
+    e.preventDefault();
+    renderRulesPage(today.rule);
+  });
+  $('#today-share').addEventListener('click', shareToday);
+}
+/** 폰: 공유창(카카오톡 고르기)으로 그림 + 문구 + 링크. PC: 문구 복사 */
+async function shareToday() {
+  const url = `${location.origin}${location.pathname}#/rules/${today.rule}`;
+  const text = `📌 오늘의 넷볼 규칙 한 줄 (Rule ${today.rule})
+${today.text}
+
+👉 ${url}`;
+  if (touchQuery.matches && navigator.share) {
+    try {
+      if (todayFile && navigator.canShare?.({ files: [todayFile] })) await navigator.share({ files: [todayFile], text });
+      else await navigator.share({ title: '오늘의 넷볼 규칙 한 줄', text });
+      return;
+    } catch (err) {
+      if (err?.name === 'AbortError') return; // 공유창을 닫음
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('공유 문구를 복사했어요. 카톡 대화창에 붙여넣어 주세요 📋', 'good', 4500);
+  } catch {
+    window.prompt('아래 문구를 복사해 카톡에 붙여넣어 주세요', text);
   }
 }
 
