@@ -56,3 +56,21 @@ create table if not exists public.likes (
 );
 
 alter table public.likes enable row level security;
+
+-- 오류 자동 기록 (api/log.js) — 브라우저에서 생긴 오류. 닉네임·이름·IP는 저장하지 않는다.
+-- 30일 지난 기록은 서버가 새 기록을 받을 때 함께 지운다.
+create table if not exists public.client_errors (
+  id          bigint generated always as identity primary key,
+  kind        text        not null check (kind in ('error', 'rejection', 'load')),
+  message     text        not null check (char_length(message) between 1 and 300),
+  source      text,
+  line        int,
+  col         int,
+  stack       text        check (stack is null or char_length(stack) <= 1000),
+  meta        jsonb,      -- 화면 상황(페이지·플레이 중·화면 크기·가로/세로·기기 종류·버전)
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists client_errors_created_idx on public.client_errors (created_at desc);
+
+alter table public.client_errors enable row level security;

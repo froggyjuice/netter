@@ -1,5 +1,6 @@
 // 허브: 탭 · 게임 설명 카드 · 시작 → 게임 → 결과/닉네임 등록 · 리더보드
 import './style.css';
+import { installErrorLogging } from './shared/error-log.js';
 import { SITE_NAME } from './config.js';
 import { GAMES } from './games/registry.js';
 import { modeFor } from './games/snake-logic.js';
@@ -28,6 +29,18 @@ import {
 } from './ui/rhythm-ui.js';
 
 const $ = (sel) => document.querySelector(sel);
+
+// 오류 자동 기록 (/api/log): 닉네임·이름은 보내지 않고 화면 상황만. 한 세션 최대 5개
+const errorLog = installErrorLogging({
+  getContext: () => ({
+    page: (location.hash.replace(/^#\/?/, '') || 'snake').slice(0, 40),
+    playing: !document.querySelector('#stage')?.hidden,
+    orientation: matchMedia('(orientation: portrait)').matches ? 'portrait' : 'landscape',
+    viewport: `${window.innerWidth}x${window.innerHeight}`,
+    ua: navigator.userAgent,
+    version: __APP_VERSION__,
+  }),
+});
 
 // 폰을 세로로 들고 있으면 코트도 세로로 그린다 (터치 기기에서만. PC 창은 항상 가로)
 const portraitQuery = matchMedia('(orientation: portrait) and (hover: none), (orientation: portrait) and (pointer: coarse)');
@@ -943,7 +956,8 @@ async function startGame(choicePos, choiceMode) {
   let start;
   try {
     start = await current.load();
-  } catch {
+  } catch (err) {
+    errorLog.report({ kind: 'load', message: `게임 불러오기 실패(${current.id}): ${err?.message ?? err}`, stack: err?.stack });
     showToast('게임을 불러오지 못했어요. 새로고침 해주세요.', 'bad');
     return;
   }
@@ -1103,7 +1117,8 @@ async function startPassStage(stageId) {
   let start;
   try {
     start = await current.load();
-  } catch {
+  } catch (err) {
+    errorLog.report({ kind: 'load', message: `게임 불러오기 실패(${current.id}): ${err?.message ?? err}`, stack: err?.stack });
     showToast('게임을 불러오지 못했어요. 새로고침 해주세요.', 'bad');
     return;
   }
@@ -1230,7 +1245,8 @@ async function startRhythm(choicePos) {
   let start;
   try {
     start = await current.load();
-  } catch {
+  } catch (err) {
+    errorLog.report({ kind: 'load', message: `게임 불러오기 실패(${current.id}): ${err?.message ?? err}`, stack: err?.stack });
     showToast('게임을 불러오지 못했어요. 새로고침 해주세요.', 'bad');
     return;
   }
@@ -1613,13 +1629,17 @@ document.querySelector('.legend .dot.roll')?.replaceWith(document.createRange().
 // ---------- 오류·아이디어 신고 ----------
 const reportDialog = $('#report-dialog');
 const reportMsg = $('#report-msg');
-$('#btn-report').addEventListener('click', () => {
+function openReport(kind) {
   if (ctl && !ctl.isPaused() && els.over.hidden) togglePause(); // 게임 중이면 멈춰 두고 쓴다
+  if (kind) reportDialog.querySelector(`input[name="kind"][value="${kind}"]`).checked = true;
   reportMsg.textContent = '';
   $('#report-send').disabled = false;
   if (typeof reportDialog.showModal === 'function') reportDialog.showModal();
   $('#report-message').focus();
-});
+}
+$('#btn-report').addEventListener('click', () => openReport());
+// 게임 화면 안의 '🐞 문제 신고' (일시정지 · 경기 종료)
+document.querySelectorAll('.btn-bug').forEach((b) => b.addEventListener('click', () => openReport('bug')));
 $('#report-cancel').addEventListener('click', () => reportDialog.close());
 $('#report-message').addEventListener('input', (e) => {
   $('#report-count').textContent = String(e.target.value.length);
@@ -1645,6 +1665,7 @@ $('#report-form').addEventListener('submit', async (e) => {
         orientation: orientationNow(),
         viewport: `${window.innerWidth}x${window.innerHeight}`,
         ua: navigator.userAgent,
+        error: errorLog.lastError()?.message, // 최근 자동 기록 오류 (있으면)
       },
     });
     $('#report-message').value = '';

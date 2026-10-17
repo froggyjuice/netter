@@ -58,3 +58,7 @@ test('cleanContext: 이상한 값은 버리고 기기 정보는 짧게 자른다
   assert.deepEqual(cleanContext({ position: 'XYZ', viewport: '9x9', orientation: 'sideways' }), null);
   assert.equal(cleanContext({ ua: 'u'.repeat(500) }).ua.length, 200);
 });
+
+test('cleanContext: 최근 자동 기록 오류는 200자까지 붙는다', () => {
+  assert.equal(cleanContext({ error: 'E'.repeat(300) }).error.length, 200);
+});

@@ -6,6 +6,7 @@ const ROUTES = {
   '/api/report': ['/lib/report-handler.js', 'handleReport'],
   '/api/comments': ['/lib/comment-handler.js', 'handleComments'],
   '/api/likes': ['/lib/like-handler.js', 'handleLikes'],
+  '/api/log': ['/lib/log-handler.js', 'handleLog'],
 };
 
 function devApi(mode) {
@@ -52,5 +53,7 @@ function devApi(mode) {
 
 export default defineConfig(({ mode }) => ({
   plugins: [devApi(mode)],
+  // 오류 기록에 붙는 앱 버전 (Vercel 빌드면 커밋 앞 7자리)
+  define: { __APP_VERSION__: JSON.stringify((process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev').slice(0, 7)) },
   build: { chunkSizeWarningLimit: 1500 }, // Phaser 청크가 크다 (게임 시작 시에만 로드됨)
 }));
