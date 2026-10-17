@@ -1,6 +1,6 @@
 {
-  "name": "넷볼 놀이터",
-  "short_name": "넷볼 놀이터",
+  "name": "Netter",
+  "short_name": "Netter",
   "description": "넷볼 포지션별 이동 구역을 게임으로 익혀요. (비공식 학습용)",
   "lang": "ko",
   "start_url": "/",

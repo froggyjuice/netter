@@ -758,7 +758,7 @@ function renderRulesPage(focusNo) {
       <h2>📖 넷볼 규칙 사전</h2>
       <a class="btn small help-btn" href="${OFFICIAL_RULES_URL}" target="_blank" rel="noopener">🌐 공식 규정집 보기</a>
     </div>
-    <p class="muted small">World Netball「Rules of Netball」2024를 놀이터가 직접 풀어 쓴 요약이에요. 정확한 원문은 공식 사이트(영문, 무료)에서 확인하세요.</p>
+    <p class="muted small">World Netball「Rules of Netball」2024를 Netter가 직접 풀어 쓴 요약이에요. 정확한 원문은 공식 사이트(영문, 무료)에서 확인하세요.</p>
     <input class="rule-search" id="rule-search" type="search" placeholder="🔍 찾기 — 예) 3초, 오프사이드, 페널티 패스" aria-label="규칙 찾기" />
     <div class="book" id="book">
       <div class="book-page" id="book-page">
