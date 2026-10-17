@@ -2,6 +2,7 @@
 // ctx: { hub, showToast, onSavesChanged(), openLogin() }
 import { SAVE_LABELS, isEmptySave } from '../shared/save-bundle.js';
 import { HUB_ERROR_TEXT } from './hub-client.js';
+import { parseDelimited, rowsToMembers, IMPORT_ERROR_TEXT, TEMPLATE_CSV, MAX_IMPORT } from '../shared/member-import.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const errText = (err) => HUB_ERROR_TEXT[err?.code] ?? '잠시 뒤 다시 시도해 주세요.';
@@ -179,6 +180,21 @@ export async function renderAdmin(el, { hub, showToast }) {
         <button class="btn primary small" type="submit" id="m-submit">등록</button>
         <button class="btn ghost small" type="button" id="m-cancel" hidden>취소</button>
       </form>
+      <details class="bulk" id="bulk">
+        <summary>📥 엑셀로 한꺼번에 등록</summary>
+        <p class="small">엑셀에 <b>이름 · 전화번호 · 역할</b>(역할은 비우면 회원) 칸을 만들고, 파일을 올리거나 표를 복사해 아래에 붙여넣으세요. 한 번에 ${MAX_IMPORT}명까지.</p>
+        <div class="row bulk-row">
+          <button type="button" class="btn small ghost" id="bulk-template">📄 양식 받기</button>
+          <label class="btn small ghost bulk-file">📂 파일 고르기 (.xlsx · .csv)<input type="file" id="bulk-file" accept=".xlsx,.csv,.txt" hidden /></label>
+        </div>
+        <textarea id="bulk-text" rows="5" placeholder="엑셀에서 표를 복사해 여기에 붙여넣기&#10;예) 이름	전화번호	역할&#10;홍길동	010-1234-5678	회원"></textarea>
+        <button type="button" class="btn small" id="bulk-preview">👀 미리보기</button>
+        <div id="bulk-result" hidden>
+          <p class="small" id="bulk-summary"></p>
+          <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>줄</th><th>이름</th><th>전화번호</th><th>역할</th><th>확인</th></tr></thead><tbody id="bulk-rows"></tbody></table></div>
+          <button type="button" class="btn primary small" id="bulk-go">✅ 등록하기</button>
+        </div>
+      </details>
       <p class="small" id="admin-count"></p>
       <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>이름</th><th>전화번호</th><th>역할</th><th>상태</th><th></th></tr></thead><tbody id="admin-rows"></tbody></table></div>
     </div>`;
@@ -274,5 +290,65 @@ export async function renderAdmin(el, { hub, showToast }) {
       showToast(errText(err), 'bad');
     }
   });
+  // ----- 엑셀 일괄 등록 -----
+  let preview = [];
+  const bulkText = el.querySelector('#bulk-text');
+  const showPreview = (rows) => {
+    preview = rowsToMembers(rows, members.map((m) => m.phone));
+    const ok = preview.filter((p) => !p.error);
+    el.querySelector('#bulk-result').hidden = false;
+    el.querySelector('#bulk-summary').textContent = preview.length
+      ? `${preview.length}줄 중 ${ok.length}명 등록할 수 있어요${preview.length > ok.length ? ` · ${preview.length - ok.length}줄은 건너뛰어요` : ''}`
+      : '읽을 줄이 없어요. 이름과 전화번호가 있는지 확인해 주세요.';
+    el.querySelector('#bulk-rows').innerHTML = preview
+      .map((p) => `<tr class="${p.error ? 'bad' : ''}"><td>${p.line}</td><td>${esc(p.name)}</td><td>${esc(p.error === 'bad_phone' ? p.phone : fmtPhone(p.phone))}</td>
+        <td>${p.role === 'admin' ? '운영진' : p.role === 'member' ? '회원' : esc(p.role)}</td><td>${p.error ? `⚠️ ${IMPORT_ERROR_TEXT[p.error]}` : '✅'}</td></tr>`)
+      .join('');
+    const go = el.querySelector('#bulk-go');
+    go.disabled = ok.length === 0;
+    go.textContent = `✅ ${ok.length}명 등록하기`;
+  };
+  el.querySelector('#bulk-template').addEventListener('click', () => {
+    const url = URL.createObjectURL(new Blob([TEMPLATE_CSV], { type: 'text/csv;charset=utf-8' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: '회원명단_양식.csv' });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+  el.querySelector('#bulk-preview').addEventListener('click', () => showPreview(parseDelimited(bulkText.value)));
+  el.querySelector('#bulk-file').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      if (/\.xlsx$/i.test(file.name)) {
+        const { readXlsx } = await import('../ui/xlsx-read.js');
+        showPreview(await readXlsx(file));
+      } else {
+        showPreview(parseDelimited(await file.text()));
+      }
+      showToast(`${file.name} 을(를) 읽었어요. 미리보기를 확인해 주세요`, 'good');
+    } catch {
+      showToast('파일을 읽지 못했어요. .xlsx 나 .csv 로 저장하거나, 표를 복사해 붙여넣어 주세요', 'bad');
+    }
+  });
+  el.querySelector('#bulk-go').addEventListener('click', async () => {
+    const ok = preview.filter((p) => !p.error);
+    if (!ok.length || !window.confirm(`${ok.length}명을 등록할까요?`)) return;
+    const go = el.querySelector('#bulk-go');
+    go.disabled = true;
+    try {
+      const { results } = await hub.adminBulk(code, ok.map(({ name, phone, role }) => ({ name, phone, role })));
+      const added = results.filter((r) => r.ok).length;
+      showToast(`${added}명을 등록했어요${added < results.length ? ` (${results.length - added}명은 이미 등록됐거나 형식이 맞지 않아 건너뜀)` : ''}`, 'good', 5000);
+      bulkText.value = '';
+      el.querySelector('#bulk-result').hidden = true;
+      preview = [];
+      await load();
+    } catch (err) {
+      showToast(errText(err), 'bad');
+      go.disabled = false;
+    }
+  });
+
   if (code) load();
 }

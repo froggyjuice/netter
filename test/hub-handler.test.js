@@ -135,3 +135,25 @@ test('로컬 파일 저장소: 한 요청이 실패(전화번호 중복)해도 �
   assert.equal((await s.findByLogin('가', '01011112222')).name, '가');
   assert.equal((await s.insert({ name: '다', phone: '01033334444', role: 'member' })).id, 2);
 });
+
+test('운영진: 엑셀 일괄 등록 — 문제 있는 줄만 따로, 중복 번호는 건너뜀, 200명까지', async () => {
+  const { hub, login, auth, store } = await setup();
+  const a = auth(await login('김운영', '01011112222'), 'netter');
+  const out = await hub.handleAdmin({
+    method: 'POST', headers: a,
+    body: { members: [
+      { name: '새회원', phone: '010-5555-6666' },
+      { name: '새운영', phone: '01077778888', role: 'admin' },
+      { name: '기존번호', phone: '01033334444' },
+      { name: '', phone: '01099990000' },
+    ] },
+  });
+  assert.equal(out.status, 200);
+  assert.deepEqual(out.body.results.map((r) => r.ok || r.error), [true, true, 'duplicate_phone', 'bad_member']);
+  assert.equal((await store.list()).length, 4);
+  assert.equal(out.body.results[1].member.role, 'admin');
+  const many = Array.from({ length: 201 }, (_, i) => ({ name: 'x', phone: '0101000' + String(1000 + i) }));
+  assert.equal((await hub.handleAdmin({ method: 'POST', headers: a, body: { members: many } })).body.error, 'too_many');
+  const m = auth(await login('이회원', '01033334444'), 'netter');
+  assert.equal((await hub.handleAdmin({ method: 'POST', headers: m, body: { members: [] } })).status, 403, '회원은 못 함');
+});

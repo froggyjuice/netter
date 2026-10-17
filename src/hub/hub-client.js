@@ -87,6 +87,8 @@ export function createHubClient(store) {
     adminList: (code) => call('/api/admin', { adminCode: code }),
     adminAdd: (code, member) => call('/api/admin', { method: 'POST', body: member, adminCode: code }),
     adminUpdate: (code, patch) => call('/api/admin', { method: 'PATCH', body: patch, adminCode: code }),
+    /** 엑셀 일괄 등록 → { results: [{ ok, member | error }] } */
+    adminBulk: (code, members) => call('/api/admin', { method: 'POST', body: { members }, adminCode: code }),
   };
 }
 
@@ -102,6 +104,7 @@ export const HUB_ERROR_TEXT = {
   duplicate_phone: '이미 등록된 전화번호예요.',
   bad_member: '이름(20자까지)과 휴대폰 번호를 확인해 주세요.',
   cannot_demote_self: '자기 자신은 운영진에서 빼거나 비활성화할 수 없어요.',
+  too_many: '한 번에 200명까지 등록할 수 있어요.',
   save_too_large: '기록이 너무 커서 저장하지 못했어요.',
   network: '인터넷 연결을 확인해 주세요.',
 };

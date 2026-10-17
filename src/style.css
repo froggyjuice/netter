@@ -725,3 +725,12 @@ a.rule-link:hover { color: var(--accent); text-decoration-style: solid; }
 .admin-table th, .admin-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .admin-table tr.inactive { opacity: 0.5; }
 .admin-table .acts { display: flex; gap: 4px; }
+
+/* 운영진: 엑셀 일괄 등록 */
+.bulk { margin: 10px 0; padding: 10px 12px; border-radius: 12px; background: var(--tab); }
+.bulk summary { cursor: pointer; font-weight: 800; }
+.bulk textarea { width: 100%; font: inherit; font-size: 0.85rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); margin: 6px 0; }
+.bulk-row { flex-wrap: wrap; margin: 6px 0; }
+.bulk-file { cursor: pointer; }
+.bulk .admin-table tr.bad { color: var(--bad); }
+.bulk #bulk-result { margin-top: 8px; }
