@@ -157,3 +157,36 @@ test('운영진: 엑셀 일괄 등록 — 문제 있는 줄만 따로, 중복 �
   const m = auth(await login('이회원', '01033334444'), 'netter');
   assert.equal((await hub.handleAdmin({ method: 'POST', headers: m, body: { members: [] } })).status, 403, '회원은 못 함');
 });
+
+test('회장에게 자랑하기: 로그인 회원만, 종류마다 한 번 → 운영진 화면 목록 · 홈 알림 수 · 봤음 표시', async () => {
+  const { hub, login, auth } = await setup();
+  const m = await login('이회원', '01033334444');
+  const a = await login('김운영', '01011112222');
+  assert.equal((await hub.handleMe({ method: 'POST', headers: {}, body: { brag: 'pass-stars' } })).status, 401);
+  assert.equal((await hub.handleMe({ method: 'POST', headers: auth(m), body: { brag: 'everything' } })).body.error, 'bad_brag');
+  assert.deepEqual((await hub.handleMe({ method: 'POST', headers: auth(m), body: { brag: 'pass-stars' } })).body, { ok: true, already: false });
+  assert.deepEqual((await hub.handleMe({ method: 'POST', headers: auth(m), body: { brag: 'pass-stars' } })).body, { ok: true, already: true });
+  await hub.handleMe({ method: 'POST', headers: auth(m), body: { brag: 'rhythm-badges' } });
+  // 회원의 내 정보에는 알림 수가 없고, 운영진에게만
+  assert.equal((await hub.handleMe({ method: 'GET', headers: auth(m) })).body.new_brags, undefined);
+  assert.equal((await hub.handleMe({ method: 'GET', headers: auth(a) })).body.new_brags, 2);
+  const list = (await hub.handleAdmin({ method: 'GET', headers: auth(a, 'netter') })).body.brags;
+  assert.deepEqual(list.map((b) => [b.name, b.kind, b.seen]), [['이회원', 'rhythm-badges', false], ['이회원', 'pass-stars', false]]);
+  assert.equal((await hub.handleAdmin({ method: 'PATCH', headers: auth(a, 'netter'), body: { bragsSeen: true } })).status, 200);
+  assert.equal((await hub.handleMe({ method: 'GET', headers: auth(a) })).body.new_brags, 0);
+});
+
+test('자랑 테이블이 아직 없어도(SQL 실행 전) 로그인 · 운영진 화면은 동작', async () => {
+  const { store, hub, login, auth } = await setup();
+  const boom = async () => {
+    throw new Error('supabase 404: relation "brags" does not exist');
+  };
+  Object.assign(store, { countNewBrags: boom, listBrags: boom });
+  const a = await login('김운영', '01011112222');
+  const me = await hub.handleMe({ method: 'GET', headers: auth(a) });
+  assert.equal(me.status, 200);
+  assert.equal(me.body.new_brags, 0);
+  const adm = await hub.handleAdmin({ method: 'GET', headers: auth(a, 'netter') });
+  assert.equal(adm.status, 200);
+  assert.equal(adm.body.brags, null);
+});

@@ -64,11 +64,10 @@ test('배지: 클린 슈터는 서클 밖 슛·3초 지남이 한 번이라도 �
   assert.ok(applyRhythmResult(s, game({ goals: 10 }), NOW).earned.some((b) => b.id === 'r-clean'));
 });
 
-test('배지: 0.9m 장인은 장애가 있으면 안 됨, 어려움 정복은 어려움에서만', () => {
+test('배지: 0.9m 장인은 장애가 있으면 안 됨, 어려움 정복 배지는 없음', () => {
   const s = parseRhythmSave(null);
   assert.ok(!applyRhythmResult(s, game({ mode: 'defence', stopPerfects: 15, obstructions: 1 }), NOW).earned.some((b) => b.id === 'r-gap-master'));
-  assert.ok(!applyRhythmResult(s, game({ score: 1500 }), NOW).earned.some((b) => b.id === 'r-hard-1000'));
-  assert.ok(applyRhythmResult(s, game({ score: 1000, difficulty: 'hard' }), NOW).earned.some((b) => b.id === 'r-hard-1000'));
+  assert.ok(!applyRhythmResult(s, game({ score: 5000, difficulty: 'hard' }), NOW).earned.some((b) => b.id === 'r-hard-1000'));
 });
 
 test('배지: 선 위의 슈터는 여러 판 누적, 진행도도 누적', () => {

@@ -32,7 +32,7 @@ import {
 } from './games/rhythm-records.js';
 import {
   RHYTHM_POSITIONS, RHYTHM_RATIO, RHYTHM_BUTTONS, rhythmModeOf,
-  DIFFICULTY, DIFFICULTY_KEYS, DIFFICULTY_NOTE, rhythmRulesHtml, rhythmHelpHtml, rhythmReviewRows, rhythmHooks,
+  rhythmRulesHtml, rhythmHelpHtml, rhythmReviewRows, rhythmHooks,
 } from './ui/rhythm-ui.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -136,7 +136,7 @@ const isPass = () => current.id === 'pass';
 let passProgress = parseProgress(store.get('netball.pass')); // 패스 퍼즐 스테이지별 최고 별
 let rhythmMode = 'attack'; // 지금 경기의 모드 (GS·GA 공격 · GK·GD 수비)
 let rhythmSave = parseRhythmSave(store.get('netball.rhythm')); // 리듬 슈팅 최고 기록 · 배지 (이 브라우저)
-let rhythmDiff = DIFFICULTY_KEYS.includes(store.get('netball.rdiff')) ? store.get('netball.rdiff') : 'normal';
+const rhythmDiff = 'normal'; // 난이도는 '보통' 하나로 (쉬움·어려움은 없앰)
 
 // ---------- 공통 ----------
 function zoneNote(pos) {
@@ -333,7 +333,7 @@ function rulesHtml(p) {
       <p>포지션마다 <b>들어갈 수 있는 구역</b>이 달라요.<br />갈 수 없는 곳은 빗금, 그 경계는 <b>빨간 선</b>이에요.</p>
       <p>벽에 닿으면 옆으로 튕겨요.<br />다른 구역에 들어가려 하면 <b>오프사이드 −10점</b>!</p>
       <p>시작은 <b>센터 패스</b>처럼: C만 센터 서드에서, 나머지는 자기 서드에서 출발해요.<br />
-        휘슬(3·2·1) 전에 움직이려 하면 <b>브레이킹</b>이에요.</p>
+        휘슬(3·2·1) 전에 움직이려 하면 <b>브레이킹 반칙(Breaking)</b>이에요.</p>
       <p>${BALL_ICON}공을 5개 모은 뒤 가끔 나오는 <b>교체 아이템</b>을 먹으면 포지션이 바뀌어요.</p>
       <p>⏱️ 경기는 실제처럼 <b>4쿼터</b>예요. 한 쿼터 45초가 실제 15분(시계는 15:00부터)이고, 쿼터 사이에 쉬는 시간이 있어요.<br />
         쿼터마다 <b>진영이 바뀌고</b>(우리 골이 반대편으로), 센터 패스는 두 팀이 <b>번갈아</b> 해요. (Rule 2.1·2.2·8.1)<br />
@@ -356,10 +356,10 @@ function rulesHtml(p) {
         시작할 땐 맞수 C만 센터 서드에 서 있어요. 맞수는 처음엔 느리고, ${BALL_ICON}공 5개마다 조금씩 빨라져요.</p>
       <p>공격할 땐 맞수가 ${BALL_ICON}공과 패스를 <b>가로채러</b> 오고, 수비할 땐 내 앞을 <b>막아서요</b>.<br />
         0.9m를 지키고 가로채면 <b>정당한 인터셉트</b>예요 (Rule 16.6).</p>
-      <p>🚨 <b>장애(맞수 반칙)</b>: 내가 공을 잡고 있는데 맞수가 <b>0.9m(한 칸)</b> 안으로 들어오면 <b>페널티 패스</b>!<br />
+      <p>🚨 <b>장애 반칙(Obstruction · 맞수 반칙)</b>: 내가 공을 잡고 있는데 맞수가 <b>0.9m(한 칸)</b> 안으로 들어오면 <b>페널티 패스</b>!<br />
         맞수는 옆에 비켜서서 패스가 끝날 때까지 못 움직이고(<b>아웃 오브 플레이</b>), 내 3초는 다시 시작돼요. (Rule 6.4·16.1)<br />
         GS·GA가 <b>골 서클 안</b>에서 페널티 패스를 얻으면 패스 대신 <b>슛</b>(골대 앞 ‘슛’ 칸, +30)도 할 수 있어요. (Rule 6.6)</p>
-      <p>🚨 <b>접촉(내 반칙)</b>: 머리로 맞수에 부딪히면 공이 상대에게 넘어가요.<br />맞수가 그 자리에서 페널티 패스를 하고, 그 <b>공이 손을 떠날 때까지</b> 나는 못 움직여요(아웃 오브 플레이). (Rule 6.4c·17)</p>
+      <p>🚨 <b>접촉 반칙(Contact · 내 반칙)</b>: 머리로 맞수에 부딪히면 공이 상대에게 넘어가요.<br />맞수가 그 자리에서 페널티 패스를 하고, 그 <b>공이 손을 떠날 때까지</b> 나는 못 움직여요(아웃 오브 플레이). (Rule 6.4c·17)</p>
     </div>`;
 }
 
@@ -455,6 +455,7 @@ function renderIntro() {
     <section class="badges" aria-label="배지">
       <h3>🏅 내 배지 <small>${Object.keys(profile.badges).length} / ${BADGES.length}</small></h3>
       <ul>${BADGES.map((b) => badgeItem(b)).join('')}</ul>
+      ${bragHtml('snake-badges', BADGES.every((b) => profile.badges[b.id]))}
     </section>`;
 
   const tryBtn = $('#btn-try');
@@ -563,12 +564,6 @@ function renderRhythmIntro() {
         </div>
         <div class="practice" id="practice" hidden></div>
         <div class="start-row">
-          <div class="mode-pick diff-pick">
-            <p>난이도</p>
-            <div class="chips" role="group" aria-label="난이도 선택">
-              ${DIFFICULTY_KEYS.map((d) => `<button type="button" class="chip" data-diff="${d}" title="${DIFFICULTY_NOTE[d]}"><b>${DIFFICULTY[d].label}</b></button>`).join('')}
-            </div>
-          </div>
           <button class="btn primary" id="btn-start" type="button">시작 ▶</button>
         </div>
       </div>
@@ -576,19 +571,13 @@ function renderRhythmIntro() {
     <section class="badges" aria-label="리듬 슈팅 배지">
       <h3>🏅 내 배지 <small>${Object.keys(rhythmSave.badges).length} / ${RHYTHM_BADGES.length}</small></h3>
       <ul>${RHYTHM_BADGES.map((b) => badgeItem(b, rhythmSave, rhythmBook.progress)).join('')}</ul>
+      ${bragHtml('rhythm-badges', RHYTHM_BADGES.every((b) => rhythmSave.badges[b.id]))}
     </section>`;
   els.intro.querySelectorAll('.badge button').forEach((btn) =>
     btn.addEventListener('click', () => {
       const open = btn.getAttribute('aria-expanded') !== 'true';
       btn.setAttribute('aria-expanded', String(open));
       $(`#${btn.getAttribute('aria-controls')}`).hidden = !open;
-    }),
-  );
-  els.intro.querySelectorAll('.chip[data-diff]').forEach((chip) =>
-    chip.addEventListener('click', () => {
-      rhythmDiff = chip.dataset.diff;
-      store.set('netball.rdiff', rhythmDiff);
-      sync();
     }),
   );
   const tryBtn = $('#btn-try');
@@ -614,9 +603,8 @@ function renderRhythmIntro() {
   tryBtn.addEventListener('click', () => (homeDemo ? endPractice() : startPractice()));
 
   const sync = () => {
-    if (homeDemo) startPractice(); // 포지션·난이도를 바꾸면 연습도 그에 맞게 다시
+    if (homeDemo) startPractice(); // 포지션을 바꾸면 연습도 그에 맞게 다시
     els.intro.querySelectorAll('.chip[data-pos]').forEach((c) => c.removeAttribute('data-peek'));
-    els.intro.querySelectorAll('.chip[data-diff]').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.diff === rhythmDiff)));
     const random = rhythmPos === RANDOM;
     $('#best-line').innerHTML = bestLine(random ? ['attack', 'defence'] : [rhythmModeOf(rhythmPos)], rhythmDiff);
     $('#preview').hidden = random;
@@ -769,6 +757,7 @@ function renderRulesPage(focusNo) {
         <p class="muted small" id="rule-empty" hidden>찾는 규칙이 없어요. 다른 낱말로 찾아 봐요.</p>
         <p class="book-foot" id="book-foot"></p>
       </div>
+      <div class="page-hint" id="page-hint" aria-hidden="true" hidden></div>
     </div>
     <nav class="rule-pager" id="rule-pager" aria-label="쪽 넘기기">
       <button type="button" class="pg pg-arrow" id="rule-prev" aria-label="이전 쪽">‹</button>
@@ -857,6 +846,36 @@ function renderRulesPage(focusNo) {
     if (Math.abs(dx) > 60) showPage(page + (dx < 0 ? 1 : -1));
   });
   rulesTurn = (d) => showPage(page + d); // ← → 키 (아래 keydown)
+  // 책장 가운데를 기준으로 오른쪽을 누르면 다음 쪽, 왼쪽을 누르면 이전 쪽 (링크 · 버튼 · 글자 고르기는 빼고)
+  const hint = $('#page-hint');
+  const sideOf = (e) => {
+    const r = sheet.getBoundingClientRect();
+    return e.clientX - r.left < r.width / 2 ? -1 : 1;
+  };
+  const canTurn = (d) => !$('#rule-pager').hidden && (d < 0 ? page > 0 : page < pages.length - 1);
+  const onControl = (e) => e.target instanceof Element && e.target.closest('a, button, input, summary');
+  sheet.addEventListener('click', (e) => {
+    if (onControl(e) || String(getSelection?.() ?? '')) return;
+    const d = sideOf(e);
+    if (canTurn(d)) showPage(page + d);
+  });
+  // 마우스를 올리면 그쪽에 화살표 (마우스 높이를 따라)
+  const hideHint = () => {
+    hint.hidden = true;
+    sheet.classList.remove('turnable');
+  };
+  sheet.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    const d = sideOf(e);
+    if (onControl(e) || !canTurn(d)) return hideHint();
+    const top = e.clientY - book.getBoundingClientRect().top;
+    hint.hidden = false;
+    hint.dataset.side = d > 0 ? 'next' : 'prev';
+    hint.textContent = d > 0 ? '›' : '‹';
+    hint.style.top = `${Math.round(top)}px`;
+    sheet.classList.add('turnable');
+  });
+  sheet.addEventListener('pointerleave', hideHint);
   els.intro.querySelectorAll('#rule-pager [data-page]').forEach((b) => b.addEventListener('click', () => showPage(Number(b.dataset.page))));
   $('#rule-prev').addEventListener('click', () => showPage(page - 1));
   $('#rule-next').addEventListener('click', () => showPage(page + 1));
@@ -945,6 +964,42 @@ ${today.text}
   }
 }
 
+// ---------- 🏆 회장에게 자랑하기 (배지 · 별을 모두 모았을 때 → 운영진 화면에 보인다) ----------
+const BRAGGED_KEY = 'netball.bragged'; // 이 기기에서 이미 자랑한 것
+const bragged = () => {
+  try {
+    const v = JSON.parse(store.get(BRAGGED_KEY) ?? '[]');
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+};
+function bragHtml(kind, complete) {
+  if (!complete) return '';
+  const done = bragged().includes(kind);
+  return `<div class="brag"><p>🎉 모두 모았어요! 대단해요</p>
+    <button type="button" class="btn brag-btn" data-brag="${kind}" ${done ? 'disabled' : ''}>${done ? '✅ 회장님께 자랑했어요' : '🏆 회장에게 자랑하기!'}</button></div>`;
+}
+els.intro.addEventListener('click', async (e) => {
+  const btn = e.target instanceof Element ? e.target.closest('[data-brag]') : null;
+  if (!btn || btn.disabled) return;
+  if (!hub.session) {
+    showToast('로그인하면 회장님께 자랑할 수 있어요 🔑');
+    openLogin();
+    return;
+  }
+  btn.disabled = true;
+  try {
+    const out = await hub.brag(btn.dataset.brag);
+    store.set(BRAGGED_KEY, JSON.stringify([...new Set([...bragged(), btn.dataset.brag])]));
+    btn.textContent = '✅ 회장님께 자랑했어요';
+    showToast(out.already ? '이미 자랑했어요. 회장님이 알고 계세요 😊' : '회장님께 자랑했어요! 🎉', 'good');
+  } catch (err) {
+    btn.disabled = false;
+    showToast(HUB_ERROR_TEXT[err?.code] ?? '잠시 뒤 다시 시도해 주세요.', 'bad');
+  }
+});
+
 // ---------- 패스 퍼즐 소개 카드: 스테이지 목록 ----------
 function renderPassIntro() {
   els.intro.innerHTML = `
@@ -954,6 +1009,7 @@ function renderPassIntro() {
     </div>
     ${audienceHtml()}
     <p class="pass-total">⭐ ${totalStars(passProgress)} / ${PASS_STAGES.length * 3}</p>
+    ${bragHtml('pass-stars', totalStars(passProgress) >= PASS_STAGES.length * 3)}
     <div class="chapters">${stageCardsHtml(passProgress)}</div>`;
   els.intro.querySelectorAll('.stage-card').forEach((card) => card.addEventListener('click', () => startGame(card.dataset.stage)));
   $('#btn-help').addEventListener('click', openHelp);
@@ -1243,7 +1299,7 @@ async function startGame(choicePos, choiceMode) {
         lastBadTurnToast = now;
         audio.sfx('whistleShort');
         ruleLog.add('breaking');
-        showToast('휘슬 전에는 움직일 수 없어요 (브레이킹 · Rule 8.11)', 'bad');
+        showToast('휘슬 전에는 움직일 수 없어요 (브레이킹 반칙 · Rule 8.11)', 'bad');
       },
       onBadTurn: () => {
         // 연타해도 토스트가 깜빡이지 않게 1.5초에 한 번만
@@ -1377,13 +1433,13 @@ $('#ppad').addEventListener('click', (e) => {
   ctl.input(act);
 });
 
-/** 홈의 최고 기록 줄: 고른 모드 · 난이도 칸 */
+/** 홈의 최고 기록 줄: 고른 모드 칸 (난이도는 보통 하나) */
 function bestLine(modes, diff) {
   const label = { attack: '🎯 공격', defence: '🛡️ 수비' };
   return modes
     .map((m) => {
       const b = bestFor(rhythmSave, m, diff);
-      const head = `${label[m]} · ${DIFFICULTY[diff].label}`;
+      const head = label[m];
       return b
         ? `🏆 ${head} 최고 <b>${b.score.toLocaleString()}점</b> · 🔥 ${b.combo}연속 <span class="muted small">(${b.position} · ${b.date})</span>`
         : `🏆 ${head} — 아직 기록이 없어요. 첫 기록을 남겨 봐요!`;
@@ -1397,9 +1453,8 @@ function renderRhythmHud(s) {
   const mode = rhythmModeOf(s.position);
   $('#hud-pos').dataset.group = mode;
   $('#hud-score').textContent = String(s.score);
-  const diff = DIFFICULTY[s.difficulty ?? rhythmDiff]?.label ?? '';
   const what = mode === 'attack' ? '🎯 골 서클 안에서만 슛 · 밖에서는 패스' : '🛡️ ① 0.9m에 멈춤 → ② 공이 올라갈 때 블록';
-  const note = `${s.position} · ${diff} — ${what}${s.bpm ? ` · ${s.bpm} BPM` : ''}`;
+  const note = `${s.position} — ${what}${s.bpm ? ` · ${s.bpm} BPM` : ''}`;
   $('#hud-zone').textContent = note;
   $('#hud-zone').title = note;
 }
@@ -1527,7 +1582,7 @@ function snakeReviewRows(r) {
     ['🤝', '3초 패스 성공', `${r.passes}번 (최대 ${r.bestChain}연속)`],
     ['🚩', '오프사이드', `${r.offsides}번`],
     ['🚨', '내 접촉 반칙', `${r.contacts}번`],
-    ['🟢', '맞수 장애 → 페널티 패스', `${r.penaltiesWon ?? 0}번`],
+    ['🟢', '맞수 장애 반칙 → 페널티 패스', `${r.penaltiesWon ?? 0}번`],
     ['🥷', '맞수에게 가로채임', `${r.intercepts ?? 0}번`],
   ];
   if (r.mode === 'defence' || r.conceded) rows.push(['💔', '실점', `${r.conceded}번`]);

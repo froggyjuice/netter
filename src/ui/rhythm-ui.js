@@ -21,12 +21,6 @@ export const RHYTHM_HOW = Object.freeze({
 export const RHYTHM_RATIO = GOAL_THIRD.w / GOAL_THIRD.h;
 export { DIFFICULTY, DIFFICULTY_KEYS };
 
-/** 난이도 칩 설명 */
-export const DIFFICULTY_NOTE = Object.freeze({
-  easy: '판정 넉넉 · Perfect 20',
-  normal: 'Perfect 30',
-  hard: '판정 좁음 · 1~2박 · 엇박 · Perfect 40',
-});
 
 const REBOUND_KEY = '두 버튼 중 <b>아무거나</b>';
 
@@ -87,7 +81,7 @@ function defenceRulesHtml(p) {
       <p><b>GK·GD</b>로 뛰면 상대 슈터(GK↔GS, GD↔GA)를 막아요. 한 번의 수비는 <b>① 멈춤 → ② 블록</b> 순서예요.</p>
       <p><b>① 🧍 멈춤</b>: 상대가 서클 안에서 공을 잡으면 내가 슈터에게 다가가요.<br />
         슈터 둘레의 <b>0.9m 원이 노랗게 빛나는 박</b>에 ① 멈춤! Perfect <b>+20</b>(보통)</p>
-      <p>너무 일찍 멈추면 멀어서 ② 블록이 닿지 않고, 너무 늦으면 0.9m 안으로 들어가 <b>장애</b>예요. (Rule 16.1)</p>
+      <p>너무 일찍 멈추면 멀어서 ② 블록이 닿지 않고, 너무 늦으면 0.9m 안으로 들어가 <b>장애 반칙(Obstruction)</b>이에요. (Rule 16.1)</p>
     </div>
     <div class="info-panel" id="${p}-block" hidden>
       <p><b>② ✋ 블록</b>: ① 멈춤 다음, 슈터 머리 위의 <b>주황 원이 작아지는 박</b>에 공이 손을 떠나요.<br />
@@ -102,7 +96,7 @@ function defenceRulesHtml(p) {
         놓치면 상대 슈터가 다시 잡아요.</p>
     </div>
     <div class="info-panel" id="${p}-foul" hidden>
-      <p><b>장애 (Obstruction)</b>: ① 멈춤이 늦어 0.9m 안으로 들어가면 상대 팀 <b>페널티 패스</b>.<br />
+      <p><b>장애 반칙 (Obstruction)</b>: ① 멈춤이 늦어 0.9m 안으로 들어가면 상대 팀 <b>페널티 패스</b>.<br />
         나는 옆에 비켜서서 공이 떠날 때까지 못 움직여요(OUT). (Rule 16.1·6.4)</p>
       <p><b>슛 방해 (Interference)</b>: ② 블록이 늦어 링으로 떨어지는 공을 건드리면 상대 팀 <b>페널티 패스</b>,<br />
         들어갈 슛이었다면 골도 인정돼요. (Rule 9.7)</p>
@@ -121,11 +115,10 @@ export function rhythmHelpHtml() {
     <p class="desc">
       포지션에 따라 모드가 정해져요. <b>GS·GA</b> = 🎯 공격 모드, <b>GK·GD</b> = 🛡️ 수비 모드.<br />
       🔒 <b>WA · WD · C</b>는 골 서클에 들어갈 수 없어 슛도, 슈터 수비도 못 해요 (Rule 9.1). 눌러 보면 갈 수 있는 구역이 미니 코트에 보여요.<br />
-      4쿼터 경기(한 쿼터 30초 = 실제 15분), 쿼터마다 <b>박자가 빨라져요</b>.<br />
-      난이도 — <b>쉬움</b>: 판정 넉넉, Perfect 20 / <b>보통</b>: Perfect 30 / <b>어려움</b>: 판정 좁음, 원이 1박 또는 2박, 3쿼터부터 엇박, Perfect 40
+      4쿼터 경기(한 쿼터 30초 = 실제 15분), 쿼터마다 <b>박자가 빨라져요</b>.
     </p>
     <p class="small">🎯 <b>타이밍 연습</b>: 홈의 연습 버튼으로 실제 경기 전에 박자 맞추기만 해 볼 수 있어요 (기록은 안 남아요).<br />
-      🏆 <b>최고 기록</b>은 모드 × 난이도마다 따로, 🏅 <b>배지</b>와 함께 이 기기의 브라우저에 저장돼요.</p>
+      🏆 <b>최고 기록</b>은 공격 · 수비 모드마다 따로, 🏅 <b>배지</b>와 함께 이 기기의 브라우저에 저장돼요.</p>
     <section class="help-mode">
       <h4>🎯 공격 모드 (GS·GA)</h4>
       <p class="small">${RHYTHM_HOW.attack}</p>
@@ -145,7 +138,6 @@ export function rhythmHelpHtml() {
 export function rhythmReviewRows(r) {
   const rows = r.mode === 'defence' ? defenceRows(r) : attackRows(r);
   if (r.quarters?.length) rows.unshift(['⏱️', '쿼터별 점수', r.quarters.map((q) => `${q.quarter}Q ${q.score}`).join(' · ')]);
-  if (r.difficulty) rows.unshift(['🎚️', '난이도', DIFFICULTY[r.difficulty]?.label ?? r.difficulty]);
   return rows;
 }
 
@@ -157,7 +149,7 @@ function defenceRows(r) {
     ['🏀', '리바운드 잡음 / 놓침', `${r.rebounds ?? 0} / ${r.reboundsLost ?? 0}`],
     ['🧱', '상대 슛 빗나감', `${r.saves ?? 0}번`],
     ['💔', '실점', `${r.conceded ?? 0}번`],
-    ['🚨', '장애 (0.9m 안)', `${r.obstructions ?? 0}번`],
+    ['🚨', '장애 반칙 (0.9m 안)', `${r.obstructions ?? 0}번`],
     ['🥷', '슛 방해 (늦은 블록)', `${r.interferences ?? 0}번`],
     ['⏩', '너무 일찍 뜀', `${r.earlyJumps ?? 0}번`],
     ['🔥', '최대 연속', `${r.bestCombo ?? 0}번`],
@@ -311,7 +303,7 @@ export function rhythmHooks({ showToast, ruleLog, audio }) {
       audio.sfx('whistle');
       ruleLog().add('obstruction');
       ruleLog().add('outOfPlay');
-      showToast('🚨 장애! 0.9m 안으로 들어갔어요 → 상대 팀 페널티 패스 (Rule 16.1)', 'bad', 4000);
+      showToast('🚨 장애 반칙! 0.9m 안으로 들어갔어요 → 상대 팀 페널티 패스 (Rule 16.1)', 'bad', 4000);
     },
     onBlock: () => {
       audio.sfx('circleBlock');

@@ -369,7 +369,7 @@ function breaking(ctx, g) {
   caterpillar(g, tx + 30, 260, { R: 16, fx: -1, fy: 0, segs: 2 });
   bib(ctx, 'GA', tx + 30, 296);
   verdict(ctx, tx + 75, 260, true, 16);
-  label(ctx, '휘슬 전에 센터 서드 들어가기 → 브레이킹', 280, 330, { size: 14 });
+  label(ctx, '휘슬 전에 센터 서드 들어가기 → 브레이킹 반칙', 280, 330, { size: 14 });
 }
 
 /** Rule 9: 골 서클 안에서 슛 = 골 */
@@ -596,7 +596,7 @@ function distance(ctx, g, ok) {
   }
   measure(ctx, 250, 290, gx - 10, 290, ok ? '0.9m 이상' : '0.9m 안!', ok);
   verdict(ctx, gx + 60, 120, ok, 22);
-  label(ctx, ok ? '0.9m 떨어져서 팔 들기 OK' : '가까이서 팔 뻗어 막기 → 장애, 페널티 패스', W / 2, 40, { size: 15 });
+  label(ctx, ok ? '0.9m 떨어져서 팔 들기 OK' : '가까이서 팔 뻗어 막기 → 장애 반칙, 페널티 패스', W / 2, 40, { size: 15 });
 }
 const distOk = (ctx, g) => distance(ctx, g, true);
 const distBad = (ctx, g) => distance(ctx, g, false);
@@ -607,7 +607,7 @@ function contact(ctx, g) {
   holder(g, 330, 190, { fx: 1, fy: 0 });
   ghost(g, 300, 150, { R: 19, lx: 1, ly: 1 });
   bump(ctx, 318, 168, 26);
-  umpire(ctx, g, 560, 260, { fx: -1, fy: -0.5, R: 16, call: '삐익! 접촉' });
+  umpire(ctx, g, 560, 260, { fx: -1, fy: -0.5, R: 16, call: '삐익! 접촉 반칙' });
   label(ctx, '밀기 · 잡기 · 기대기 → 페널티 패스', W / 2, 40, { size: 16 });
 }
 

@@ -98,5 +98,17 @@ create table if not exists public.play_saves (
 
 alter table public.play_saves enable row level security;
 
+-- '회장에게 자랑하기': 배지 · 별을 모두 모은 회원이 누르면 운영진 화면에 보인다 (회원 · 종류마다 한 번)
+create table if not exists public.brags (
+  id          bigint generated always as identity primary key,
+  member_id   bigint      not null references public.members (id) on delete cascade,
+  kind        text        not null check (kind in ('snake-badges', 'rhythm-badges', 'pass-stars')),
+  seen        boolean     not null default false,
+  created_at  timestamptz not null default now(),
+  unique (member_id, kind)
+);
+
+alter table public.brags enable row level security;
+
 -- 첫 운영진(본인) 등록: 이름과 전화번호를 바꿔서 한 번 실행하세요.
 -- insert into public.members (name, phone, role) values ('홍길동', '01012345678', 'admin');

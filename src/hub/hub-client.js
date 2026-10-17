@@ -82,6 +82,8 @@ export function createHubClient(store) {
       return (await call('/api/me')).save;
     },
     isSaveKey: (k) => SAVE_KEYS.includes(k),
+    /** 🏆 회장에게 자랑하기 → { ok, already } */
+    brag: (kind) => call('/api/me', { method: 'POST', body: { brag: kind } }),
 
     // ----- 운영진 -----
     adminList: (code) => call('/api/admin', { adminCode: code }),
@@ -89,6 +91,8 @@ export function createHubClient(store) {
     adminUpdate: (code, patch) => call('/api/admin', { method: 'PATCH', body: patch, adminCode: code }),
     /** 엑셀 일괄 등록 → { results: [{ ok, member | error }] } */
     adminBulk: (code, members) => call('/api/admin', { method: 'POST', body: { members }, adminCode: code }),
+    /** 자랑 목록을 봤다 (홈 알림 끄기) */
+    adminBragsSeen: (code) => call('/api/admin', { method: 'PATCH', body: { bragsSeen: true }, adminCode: code }),
   };
 }
 
@@ -106,5 +110,6 @@ export const HUB_ERROR_TEXT = {
   cannot_demote_self: '자기 자신은 운영진에서 빼거나 비활성화할 수 없어요.',
   too_many: '한 번에 200명까지 등록할 수 있어요.',
   save_too_large: '기록이 너무 커서 저장하지 못했어요.',
+  bad_brag: '자랑할 수 없는 항목이에요.',
   network: '인터넷 연결을 확인해 주세요.',
 };

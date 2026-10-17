@@ -155,8 +155,8 @@ export function startRhythmPractice({ root, mode, difficulty, audio }) {
     if (defence && !cycle.done && cycle.step === 1 && now > cycle.markAt + goodWin) {
       cycle.done = true;
       record('miss');
-      show('장애!', '#b54a4a');
-      say('멈추지 않고 0.9m 안으로 들어갔어요 → 장애 (Rule 16.1). 원이 노랗게 빛날 때 ① 멈춤!', 'bad');
+      show('장애 반칙!', '#b54a4a');
+      say('멈추지 않고 0.9m 안으로 들어갔어요 → 장애 반칙 (Obstruction · Rule 16.1). 원이 노랗게 빛날 때 ① 멈춤!', 'bad');
       audio.sfx('whistle');
     }
     if (defence && !cycle.done && cycle.step === 2 && now > cycle.releaseAt + goodWin * 2) {

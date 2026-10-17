@@ -29,7 +29,26 @@ export function renderHome(el, { hub, openLogin }) {
       ${hub.isAdmin() ? '<a class="hub-card" href="#/admin"><span class="i">⚙️</span><b>운영진</b><small>회원 명단 관리</small></a>' : ''}
     </div>`;
   el.querySelector('#home-login')?.addEventListener('click', openLogin);
+  // 운영진: 아직 안 본 '회장에게 자랑하기'가 있으면 알림
+  if (hub.isAdmin()) {
+    hub
+      .me()
+      .then((out) => {
+        if (!(out?.new_brags > 0) || !el.isConnected || el.querySelector('.brag-alert')) return;
+        el.querySelector('.hub-hello')?.insertAdjacentHTML(
+          'afterend',
+          `<a class="brag-alert" href="#/admin">🏆 새 자랑 <b>${out.new_brags}개</b>가 왔어요! 운영진 화면에서 보기 ›</a>`,
+        );
+      })
+      .catch(() => {});
+  }
 }
+
+export const BRAG_LABELS = Object.freeze({
+  'snake-badges': '🐍 존 스네이크 배지 전부',
+  'rhythm-badges': '🎯 리듬 슈팅 배지 전부',
+  'pass-stars': '🧩 패스 퍼즐 별 전부',
+});
 
 /** 📅 캘린더 (2단계에서 만든다) */
 export function renderCalendar(el) {
@@ -172,6 +191,7 @@ export async function renderAdmin(el, { hub, showToast }) {
       <button class="btn small" type="submit">확인</button>
     </form>
     <div id="admin-body" hidden>
+      <section class="brag-list" id="brag-list"></section>
       <form class="admin-add" id="admin-add">
         <h3 id="admin-form-title">➕ 회원 등록</h3>
         <input id="m-name" placeholder="이름" maxlength="20" required />
@@ -218,9 +238,28 @@ export async function renderAdmin(el, { hub, showToast }) {
       )
       .join('');
   };
+  // 🏆 회장에게 자랑하기 목록 (보면 홈 알림이 꺼진다)
+  const renderBrags = (brags) => {
+    const box = el.querySelector('#brag-list');
+    if (brags == null) {
+      box.innerHTML = '<h3>🏆 자랑 목록</h3><p class="muted small">자랑 목록을 쓰려면 Supabase SQL Editor 에서 schema.sql 의 brags 테이블을 한 번 만들어 주세요.</p>';
+      return;
+    }
+    const fresh = brags.filter((b) => !b.seen).length;
+    box.innerHTML = `<h3>🏆 자랑 목록 <small>${fresh ? `새 자랑 ${fresh}개` : ''}</small></h3>${
+      brags.length
+        ? `<ul>${brags
+            .map((b) => `<li class="${b.seen ? '' : 'new'}">${b.seen ? '' : '<span class="new-tag">NEW</span>'}<b>${esc(b.name)}</b> · ${BRAG_LABELS[b.kind] ?? esc(b.kind)} <span class="muted small">${fmtTime(b.created_at)}</span></li>`)
+            .join('')}</ul>`
+        : '<p class="muted small">아직 자랑이 없어요. 배지나 별을 모두 모은 회원이 자랑하면 여기에 보여요.</p>'
+    }`;
+    if (fresh) hub.adminBragsSeen(code).catch(() => {});
+  };
   const load = async () => {
     try {
-      members = (await hub.adminList(code)).members;
+      const out = await hub.adminList(code);
+      members = out.members;
+      renderBrags(out.brags);
       try {
         sessionStorage.setItem(CODE_KEY, code);
       } catch {

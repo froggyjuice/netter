@@ -1,4 +1,4 @@
-// Vercel 서버리스 함수: GET/PUT /api/me (내 정보 · 놀이터 기록 계정 저장)
+// Vercel 서버리스 함수: GET/PUT/POST /api/me (내 정보 · 놀이터 기록 계정 저장 · 회장에게 자랑하기)
 import { handleMe } from '../lib/hub-handler.js';
 
 export default async function handler(req, res) {

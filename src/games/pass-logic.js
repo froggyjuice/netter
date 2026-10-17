@@ -86,11 +86,11 @@ export function placementProblems(stage, placements) {
 }
 
 const FAIL = {
-  short: { rule: 'Rule 12.1', text: '숏 패스! 바로 옆 동료에게는 패스할 수 없어요. 상대가 가로챌 수 있을 만큼 떨어진 동료에게 다시 해 봐요.' },
-  overThird: { rule: 'Rule 12.3', text: '서드 건너뛰기(Over a third)! 공은 세 서드 모두에서 잡혀야 해요. 센터 서드의 동료를 거치도록 다시 해 봐요.' },
+  short: { rule: 'Rule 12.1', text: '숏 패스 반칙(Short pass)! 바로 옆 동료에게는 패스할 수 없어요. 상대가 가로챌 수 있을 만큼 떨어진 동료에게 다시 해 봐요.' },
+  overThird: { rule: 'Rule 12.3', text: '서드 건너뛰기 반칙(Over a third)! 공은 세 서드 모두에서 잡혀야 해요. 센터 서드의 동료를 거치도록 다시 해 봐요.' },
   intercept: { rule: 'Rule 16.6', text: '인터셉트! 공의 길 위에 상대가 서 있었어요. 상대를 피하는 길을 찾아 다시 해 봐요.' },
   footwork: { rule: 'Rule 13', text: '풋워크 반칙! 공을 잡은 뒤에는 한 발만 디딜 수 있어요. 한 발만 디뎌 다시 해 봐요.' },
-  offside: { rule: 'Rule 14', text: '오프사이드! 자기 구역 밖으로는 나갈 수 없어요. 구역 안으로 디뎌 다시 해 봐요.' },
+  offside: { rule: 'Rule 14', text: '오프사이드 반칙! 자기 구역 밖으로는 나갈 수 없어요. 구역 안으로 디뎌 다시 해 봐요.' },
   shot: { rule: 'Rule 9.1·9.6a', text: '슛은 GS·GA가 골 서클 안에서만 할 수 있어요.' },
   incorrectShot: { rule: 'Rule 9.6a', text: '서클 밖에서 공을 잡았어요! 한 발 디뎌 서클에 들어와도 슛할 수 없어요 (잡을 때 밖을 밟았으니까).' },
   held: { rule: 'Rule 11.4', text: '3초가 지났어요(Held ball)! 공을 잡으면 3초 안에 패스하거나 슛해야 해요.' },

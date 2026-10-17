@@ -5,7 +5,7 @@ import Phaser from 'phaser';
 import { THEME, hex, FONT } from '../shared/theme.js';
 import { drawFace, drawGhost, drawBall } from '../shared/sprites.js';
 import {
-  GOAL_THIRD, WINDOWS, HOLD_MS, RHYTHM_QUARTER_MS, REBOUND_WINDOW, DIFFICULTY,
+  GOAL_THIRD, WINDOWS, HOLD_MS, RHYTHM_QUARTER_MS, REBOUND_WINDOW,
   createRhythm, advance, shoot, pass, rhythmStats, windowScale,
 } from './rhythm-logic.js';
 import {
@@ -203,7 +203,7 @@ export function startRhythm({ parent, position, difficulty = 'normal', hooks = {
     }
 
     countdown() {
-      const steps = [`${match.quarter}쿼터 · ${DIFFICULTY[difficulty].label} · ${Math.round(60_000 / state.beatMs)} BPM… 3`, '2', '1'];
+      const steps = [`${match.quarter}쿼터 · ${Math.round(60_000 / state.beatMs)} BPM… 3`, '2', '1'];
       steps.forEach((s, i) => this.time.delayedCall(i * 700, () => this.hint.setText(s).setVisible(true)));
       this.time.delayedCall(steps.length * 700, () => {
         whistled = true;
@@ -338,7 +338,7 @@ export function startRhythm({ parent, position, difficulty = 'normal', hooks = {
           hooks.onStop?.(ev);
         } else if (ev.type === 'obstruction') {
           const p = px(ev.at);
-          this.popText(p.x, p.y - 30, '장애! 0.9m 안', '#b54a4a');
+          this.popText(p.x, p.y - 30, '장애 반칙! 0.9m 안', '#b54a4a');
           this.cameras.main.shake(120, 0.004);
           hooks.onObstruction?.(ev);
         } else if (ev.type === 'block') {

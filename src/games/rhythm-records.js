@@ -24,10 +24,9 @@ export const RHYTHM_BADGES = Object.freeze([
   { id: 'r-line', icon: '👣', title: '선 위의 슈터', desc: '서클 선 위에서 골 3번 (여러 판 누적 · Rule 9.1)', goal: 3, unit: '골', total: true, stat: (r) => (attack(r) ? r.lineGoals : 0) },
   { id: 'r-block-10', icon: '✋', title: '블록왕', desc: '수비 모드 한 판에 정당한 블록 10번 (Rule 16.6a)', goal: 10, unit: '번', stat: (r) => (defence(r) ? r.blocks : 0) },
   {
-    id: 'r-gap-master', icon: '🧍', title: '0.9m 장인', desc: '수비 모드 한 판에 장애 없이 멈춤 Perfect 10번 (Rule 16.1)', goal: 10, unit: '번',
+    id: 'r-gap-master', icon: '🧍', title: '0.9m 장인', desc: '수비 모드 한 판에 장애 반칙 없이 멈춤 Perfect 10번 (Rule 16.1)', goal: 10, unit: '번',
     stat: (r) => (defence(r) && !r.obstructions ? r.stopPerfects : 0),
   },
-  { id: 'r-hard-1000', icon: '🌟', title: '어려움 정복', desc: '어려움으로 한 판 1,000점 이상', goal: 1000, unit: '점', stat: (r) => (r.difficulty === 'hard' ? r.score : 0) },
 ]);
 
 export const rhythmBook = createBadgeBook(RHYTHM_BADGES);

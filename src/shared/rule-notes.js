@@ -15,12 +15,12 @@ export const RULE_NOTES = Object.freeze({
   },
   breaking: {
     rule: 'Rule 8.11',
-    title: '브레이킹',
+    title: '브레이킹 반칙 (Breaking)',
     text: '센터 패스 휘슬 전에는 양 팀 C만 센터 서드에 있을 수 있어요. 먼저 들어가면 상대 팀 프리 패스예요.',
   },
   offside: {
     rule: 'Rule 14.1',
-    title: '오프사이드',
+    title: '오프사이드 반칙 (Offside)',
     text: '내 포지션에게 허용되지 않은 구역에 들어가면 오프사이드예요. 상대 팀 프리 패스.',
   },
   heldBall: {
@@ -73,7 +73,7 @@ export const RULE_NOTES = Object.freeze({
   circleDefence: { rule: 'Rule 3 (p.20)', title: '수비 서클', text: '우리 골 서클(수비 서클)에는 수비수 GK·GD만 들어갈 수 있어요.' },
   obstruction: {
     rule: 'Rule 16.1',
-    title: '장애 (Obstruction)',
+    title: '장애 반칙 (Obstruction)',
     text: '공을 가진 선수를 수비할 때는 0.9m 이상 떨어져야 해요. 어기면 상대 팀 페널티 패스.',
   },
   penaltyShoot: {
@@ -84,7 +84,7 @@ export const RULE_NOTES = Object.freeze({
   interception: { rule: 'Rule 16.6', title: '정당한 인터셉트', text: '0.9m를 지킨 수비수는 공을 가로채거나 쳐 낼 수 있어요.' },
   contact: {
     rule: 'Rule 17.1',
-    title: '접촉 (Contact)',
+    title: '접촉 반칙 (Contact)',
     text: '상대를 밀거나 부딪쳐서 플레이를 방해하면 접촉 반칙이에요. 상대 팀 페널티 패스.',
   },
   outOfPlay: {

@@ -781,3 +781,28 @@ a.rule-link:hover { color: var(--accent); text-decoration-style: solid; }
 .today-scene { display: block; width: 100%; height: auto; aspect-ratio: 2 / 1; border-radius: 12px; background: #eef5ea; }
 .today-text { margin: 10px 2px; font-size: 1.05rem; font-weight: 700; line-height: 1.5; }
 .today-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+
+/* 넷볼 규칙 사전: 책장 왼쪽/오른쪽을 눌러 넘기기 · 마우스를 올리면 화살표 */
+.book-page.turnable { cursor: pointer; }
+.page-hint {
+  position: absolute; z-index: 4; width: 44px; height: 44px; margin-top: -22px; border-radius: 50%;
+  display: grid; place-items: center; pointer-events: none;
+  background: rgba(185, 162, 116, 0.88); color: #fff; font-size: 1.8rem; font-weight: 700; line-height: 1;
+  box-shadow: 0 3px 10px rgba(80, 60, 20, 0.25);
+}
+.page-hint[hidden] { display: none; }
+.page-hint[data-side='next'] { right: -14px; }
+.page-hint[data-side='prev'] { left: -12px; }
+
+/* 🏆 회장에게 자랑하기 */
+.brag { margin: 12px 0 4px; padding: 12px; border-radius: 14px; background: linear-gradient(135deg, #fff4cf, #ffe7d6); text-align: center; }
+.brag p { margin: 0 0 8px; font-weight: 700; }
+.brag-btn { background: #f2cf6b; color: #5a3e00; font-weight: 800; }
+.brag-btn:disabled { background: #fff; color: var(--muted); cursor: default; }
+.brag-alert { display: block; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: #fff4cf; color: #5a3e00; text-decoration: none; border: 2px solid #f2cf6b; }
+.brag-list { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: #fffaf0; border: 1px solid #ecdcb4; }
+.brag-list h3 { margin: 0 0 6px; font-size: 1rem; }
+.brag-list h3 small { color: #b54a4a; margin-left: 6px; }
+.brag-list ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.brag-list li.new { font-weight: 700; }
+.new-tag { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 6px; background: #d96464; color: #fff; font-size: 0.7rem; }
