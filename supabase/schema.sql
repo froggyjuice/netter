@@ -74,3 +74,29 @@ create table if not exists public.client_errors (
 create index if not exists client_errors_created_idx on public.client_errors (created_at desc);
 
 alter table public.client_errors enable row level security;
+
+-- ===== 동아리 허브 1단계: 회원 명단 · 놀이터 기록 계정 저장 =====
+-- 운영진이 미리 등록한 이름 + 전화번호로 로그인한다(메일 인증 없음). 연락처는 운영진 화면에서만 보인다.
+-- 다른 테이블처럼 RLS만 켜고 정책은 없다 → 서버 함수(service_role)만 접근.
+create table if not exists public.members (
+  id          bigint generated always as identity primary key,
+  name        text        not null check (char_length(name) between 1 and 20),
+  phone       text        not null unique check (phone ~ '^01[0-9]{8,9}$'),
+  role        text        not null default 'member' check (role in ('member', 'admin')),
+  active      boolean     not null default true,
+  created_at  timestamptz not null default now()
+);
+
+alter table public.members enable row level security;
+
+-- 놀이터 기록(배지 · 최고 기록 · 패스 퍼즐 별)을 계정에 저장할 때
+create table if not exists public.play_saves (
+  member_id   bigint      primary key references public.members (id) on delete cascade,
+  data        jsonb       not null,
+  updated_at  timestamptz not null default now()
+);
+
+alter table public.play_saves enable row level security;
+
+-- 첫 운영진(본인) 등록: 이름과 전화번호를 바꿔서 한 번 실행하세요.
+-- insert into public.members (name, phone, role) values ('홍길동', '01012345678', 'admin');

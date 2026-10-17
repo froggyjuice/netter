@@ -17,16 +17,23 @@
   </head>
   <body>
     <header class="topbar">
-      <a href="#/" class="brand" id="brand">🏐 넷볼 놀이터</a>
+      <a href="#/home" class="brand" id="brand">🏐 넷볼 놀이터</a>
       <span class="sub">비공식 학습용 · 2024 월드넷볼 규칙 기준</span>
       <div class="topbar-actions">
         <button class="btn small install" id="btn-install" type="button" hidden>📲 홈 화면에 설치</button>
         <a class="btn small board-link" id="btn-board" href="#/board">🏆 랭킹·댓글</a>
         <button class="btn small report" id="btn-report" type="button" title="오류나 아이디어를 알려주세요">💬 신고</button>
+        <button class="btn small login" id="btn-login" type="button">🔑 로그인</button>
       </div>
     </header>
 
     <main class="wrap">
+      <nav class="mainnav" id="mainnav" aria-label="메뉴">
+        <a href="#/home" data-nav="home">🏠 홈</a>
+        <a href="#/calendar" data-nav="calendar">📅 캘린더</a>
+        <a href="#/snake" data-nav="play">🎮 놀이터</a>
+        <a href="#/rules" data-nav="rules">📖 넷볼 규칙 사전</a>
+      </nav>
       <nav class="tabs" id="tabs" aria-label="게임 선택"></nav>
 
       <section class="card" id="intro"></section>
@@ -144,6 +151,20 @@
           <button class="btn ghost small" id="help-close" type="button" aria-label="닫기">✕</button>
         </div>
         <div id="help-body"></div>
+      </dialog>
+
+      <dialog class="report-dialog login-dialog" id="login-dialog" aria-labelledby="login-title">
+        <form id="login-form">
+          <h3 id="login-title">🔑 로그인</h3>
+          <p class="muted small">운영진이 등록한 이름과 휴대폰 번호로 바로 로그인해요.</p>
+          <label>이름 <input id="login-name" autocomplete="name" maxlength="20" required /></label>
+          <label>휴대폰 번호 <input id="login-phone" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000" required /></label>
+          <p class="small" id="login-msg" aria-live="polite"></p>
+          <div class="row">
+            <button class="btn ghost" id="login-cancel" type="button">닫기</button>
+            <button class="btn primary" id="login-send" type="submit">로그인</button>
+          </div>
+        </form>
       </dialog>
 
       <dialog class="report-dialog" id="report-dialog" aria-labelledby="report-title">

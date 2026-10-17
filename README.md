@@ -28,7 +28,7 @@
 ```bash
 npm install
 npm run dev        # http://localhost:5173  (같은 와이파이의 폰에서는 터미널에 뜨는 Network 주소)
-npm test           # 규칙·로직·API 단위 테스트 (182개)
+npm test           # 규칙·로직·API 단위 테스트 (209개)
 npm run build      # 배포용 빌드 확인
 ```
 
@@ -37,7 +37,7 @@ npm run build      # 배포용 빌드 확인
 ## 2. Supabase 준비 (배포 전 1회)
 
 1. supabase.com 에서 새 프로젝트 생성
-2. **SQL Editor** 에 `supabase/schema.sql` 내용을 붙여넣고 Run → `scores` · `reports` · `comments` · `likes` 테이블이 생깁니다
+2. **SQL Editor** 에 `supabase/schema.sql` 내용을 붙여넣고 Run → `scores` · `reports` · `comments` · `likes` · `client_errors` · `members` · `play_saves` 테이블이 생깁니다
 3. **Project Settings → API** 에서 두 값을 복사
    - `Project URL` → `SUPABASE_URL`
    - `service_role` 키 → `SUPABASE_SERVICE_KEY` (**비밀 키**: 코드·GitHub·채팅에 노출 금지, `VITE_` 접두사도 금지)
@@ -54,13 +54,16 @@ npm run build      # 배포용 빌드 확인
    git push -u origin main
    ```
 2. vercel.com → **Add New → Project** → 저장소 Import (Framework: Vite 자동 인식)
-3. **Environment Variables** 에 `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` 등록 → **Deploy**
+3. **Environment Variables** 에 `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, 그리고 동아리 허브용 `SESSION_SECRET`(긴 무작위 문자열) · `ADMIN_CODE`(운영진 화면 코드) 등록 → **Deploy**
 4. 배포 주소에서 점검: 한 판 하고 닉네임 등록(→ Table Editor `scores`), 댓글 · 신고 · 개발 중 게임 ❤️ 좋아요
 
 환경변수를 빼먹으면 랭킹이 "서버의 점수 저장소가 아직 설정되지 않았어요"라고 안내합니다.
 이후에는 `git push` 만 하면 자동 재배포됩니다.
 
 ### 운영 메모
+
+- **첫 운영진 등록**(한 번): SQL Editor 에서 `insert into public.members (name, phone, role) values ('이름', '01012345678', 'admin');` → 그 이름 + 전화번호로 로그인 → 👤 → ⚙️ 운영진 화면(운영진 코드 입력)에서 나머지 회원 등록
+- **동아리 허브 로그인**: 운영진이 등록한 이름 + 전화번호로 바로 로그인(메일 인증 없음). 연락처는 운영진 화면에서만 보입니다.
 
 - **댓글 숨기기**: Supabase Table Editor → `comments` 에서 `hidden` 을 체크하면 목록에서 사라집니다.
 - **신고 보기**: Table Editor → `reports` (이름·연락처·IP는 저장하지 않습니다)
@@ -79,8 +82,9 @@ src/games/pass-stages.js   패스 퍼즐 챕터·스테이지 데이터
 src/shared/zones.js        ★ 포지션별 이동 구역 (모든 게임이 공유하는 단일 규칙 출처)
 src/shared/rulebook.js     넷볼 규칙 사전 (Rule 1~21 요약)    rule-notes.js  경기 후 '규칙 복습'
 src/shared/theme.js        파스텔 색상 팔레트 (CSS 변수는 src/style.css :root)
+src/hub/                   동아리 허브: 로그인 세션 · 서버 호출(hub-client) · 홈/캘린더/내 정보/운영진 화면(hub-pages)
 src/ui/                    화면 조각 (리듬·패스 UI, 맛보기·연습, 규칙 링크, 개발 중 미리보기, 랭킹·댓글 …)
-api/*.js                   Vercel 함수 (score · report · comments · likes, 얇은 어댑터)
+api/*.js                   Vercel 함수 (score · report · comments · likes · log · auth · me · admin, 얇은 어댑터)
 lib/*-handler.js           요청 검증·처리   lib/*-store.js  Supabase / 파일 / 메모리 저장소
 supabase/schema.sql        DB 테이블
 test/                      단위 테스트
@@ -96,6 +100,6 @@ test/                      단위 테스트
 
 ## 6. 다음 단계
 
-1. 배포 (GitHub → Vercel → Supabase) 후 오류 자동 기록(`/api/log`)
-2. **동아리 허브**: 운영진이 등록한 명단 + 이메일 링크 로그인 → 훈련 캘린더(캘린더 추가 버튼) → 일정별 참석 투표와 포지션 랜덤 배정 → 날짜 정하기 투표 → 공유 링크 · 출석 순위
+1. ✅ 배포 · 오류 자동 기록 · 허브 1단계(명단 · 이름+전화번호 로그인 · 놀이터 기록 계정 저장)
+2. **동아리 허브** 다음 단계: 훈련 캘린더(캘린더 추가 버튼) → 일정별 참석 투표와 포지션 랜덤 배정 → 날짜 정하기 투표 → 공유 링크 · 출석 순위
 3. 개발 중 게임: ❤️ 좋아요가 많은 순서대로

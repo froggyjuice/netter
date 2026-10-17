@@ -1,6 +1,9 @@
 // 허브: 탭 · 게임 설명 카드 · 시작 → 게임 → 결과/닉네임 등록 · 리더보드
 import './style.css';
 import { installErrorLogging } from './shared/error-log.js';
+import { createHubClient, HUB_ERROR_TEXT } from './hub/hub-client.js';
+import { renderHome, renderCalendar, renderMe, renderAdmin } from './hub/hub-pages.js';
+import { SAVE_KEYS } from './shared/save-bundle.js';
 import { SITE_NAME } from './config.js';
 import { GAMES } from './games/registry.js';
 import { modeFor } from './games/snake-logic.js';
@@ -49,6 +52,7 @@ const touchQuery = matchMedia('(hover: none), (pointer: coarse)'); // style.css 
 document.body.dataset.orient = orientationNow();
 
 // localStorage 는 막혀 있을 수 있으므로 항상 try/catch
+let hubReady = false; // store.set 이 허브보다 먼저 불려도 안전하게
 const store = {
   get(key) {
     try {
@@ -63,8 +67,20 @@ const store = {
     } catch {
       /* 저장 못 해도 게임은 정상 동작 */
     }
+    if (SAVE_KEYS.includes(key)) scheduleAccountSave();
   },
 };
+
+// ---------- 동아리 허브: 로그인 · 놀이터 기록 계정 저장 ----------
+const hub = createHubClient(store);
+hubReady = true;
+let accountSaveTimer = 0;
+/** 계정 저장 모드면 기록이 바뀐 뒤 잠깐 모아서 한 번에 계정에 올린다 */
+function scheduleAccountSave() {
+  if (!hubReady || hub.saveMode !== 'account') return;
+  clearTimeout(accountSaveTimer);
+  accountSaveTimer = setTimeout(() => hub.uploadSave().catch(() => {}), 800);
+}
 
 const els = {
   tabs: $('#tabs'),
@@ -106,6 +122,12 @@ function stopHomeDemo() {
 // 리듬 슈팅: 슈터 GS·GA(공격) · 슈터를 막는 GK·GD(수비) 또는 넷 중 랜덤
 let rhythmPos = [...RHYTHM_POSITIONS, RANDOM].includes(store.get('netball.rpos')) ? store.get('netball.rpos') : 'GS';
 const isRhythm = () => current.id === 'rhythm';
+/** 계정에서 가져온 기록으로 화면의 기록 값을 다시 읽는다 */
+function reloadSaves() {
+  profile = parseProfile(store.get('netball.profile'));
+  passProgress = parseProgress(store.get('netball.pass'));
+  rhythmSave = parseRhythmSave(store.get('netball.rhythm'));
+}
 const isPass = () => current.id === 'pass';
 let passProgress = parseProgress(store.get('netball.pass')); // 패스 퍼즐 스테이지별 최고 별
 let rhythmMode = 'attack'; // 지금 경기의 모드 (GS·GA 공격 · GK·GD 수비)
@@ -197,24 +219,30 @@ function renderTabs(activeId = current.id) {
       }
       return a;
     }),
-    rulesTab(activeId === 'rules'),
   );
-}
-
-/** 게임 탭 끝의 '📖 넷볼 규칙 사전' 탭 */
-function rulesTab(active) {
-  const a = document.createElement('a');
-  a.className = 'tab rules-tab';
-  a.href = '#/rules';
-  a.textContent = '📖 넷볼 규칙 사전';
-  if (active) a.setAttribute('aria-current', 'page');
-  return a;
 }
 
 function route() {
   const wasPlaying = !els.stage.hidden;
   stopGame();
   const id = location.hash.replace(/^#\/?/, '');
+  // 동아리 허브 화면: 홈 · 캘린더 · 내 정보 · 운영진 (주소가 없으면 홈)
+  const hubPage = id === '' || id === 'home' ? 'home' : ['calendar', 'me', 'admin'].includes(id) ? id : null;
+  syncNav(hubPage ?? (id.startsWith('rules') ? 'rules' : 'play'));
+  els.tabs.hidden = Boolean(hubPage) || id.startsWith('rules');
+  if (hubPage) {
+    document.body.dataset.page = 'hub';
+    document.body.dataset.game = '';
+    els.board.hidden = true;
+    els.comments.hidden = true;
+    els.stage.hidden = true;
+    els.intro.hidden = false;
+    $('#btn-board').setAttribute('aria-current', 'false');
+    const ctx = { hub, showToast, onSavesChanged: reloadSaves, openLogin };
+    ({ home: renderHome, calendar: renderCalendar, me: renderMe, admin: renderAdmin })[hubPage](els.intro, ctx);
+    window.scrollTo(0, 0);
+    return;
+  }
   const onBoard = id === 'board'; // 랭킹·댓글 페이지
   document.body.dataset.page = onBoard ? 'board' : 'game';
   $('#btn-board').setAttribute('aria-current', onBoard ? 'page' : 'false');
@@ -244,6 +272,48 @@ function route() {
   if (wasPlaying) window.scrollTo(0, 0); // 게임 화면에서 돌아오면 맨 위(포지션 선택)부터 보여준다
 }
 window.addEventListener('hashchange', route);
+
+/** 위쪽 큰 메뉴: 지금 있는 곳 표시 */
+function syncNav(section) {
+  document.querySelectorAll('#mainnav a').forEach((a) => a.setAttribute('aria-current', a.dataset.nav === section ? 'page' : 'false'));
+}
+
+// ---------- 로그인 ----------
+const loginDialog = $('#login-dialog');
+/** 위쪽 버튼: 로그인 전 '🔑 로그인', 로그인 후 '👤 이름' (내 정보로) */
+function syncLoginButton() {
+  const me = hub.session?.member;
+  $('#btn-login').textContent = me ? `👤 ${me.name}` : '🔑 로그인';
+}
+function openLogin() {
+  $('#login-msg').textContent = '';
+  $('#login-send').disabled = false;
+  if (typeof loginDialog.showModal === 'function') loginDialog.showModal();
+  $('#login-name').focus();
+}
+$('#btn-login').addEventListener('click', () => {
+  if (hub.session) location.hash = '#/me';
+  else openLogin();
+});
+$('#login-cancel').addEventListener('click', () => loginDialog.close());
+$('#login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('#login-send').disabled = true;
+  $('#login-msg').textContent = '확인 중…';
+  try {
+    const me = await hub.login($('#login-name').value, $('#login-phone').value);
+    loginDialog.close();
+    syncLoginButton();
+    showToast(`👋 ${me.name}님, 반가워요!`, 'good');
+    route(); // 지금 화면을 로그인 상태로 다시 그린다
+  } catch (err) {
+    $('#login-msg').textContent = HUB_ERROR_TEXT[err.code] ?? '로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요.';
+    $('#login-send').disabled = false;
+  }
+});
+window.addEventListener('storage', (e) => {
+  if (e.key === 'netball.session') syncLoginButton(); // 다른 탭에서 로그인·로그아웃
+});
 
 // ---------- 규칙 설명 (소개 카드와 일시정지 화면이 함께 쓴다) ----------
 /** 포지션 / 3초 룰 / 맞수 토글 블록. p: id 접두사 (화면마다 달라야 함) */
@@ -1683,4 +1753,20 @@ $('#report-form').addEventListener('submit', async (e) => {
 });
 
 setupInstall({ installBtn: $('#btn-install'), helpDialog: $('#install-help'), fullscreenBtn: $('#btn-fullscreen') });
+syncLoginButton();
 route();
+if (hub.session) {
+  // 이름·역할이 바뀌었을 수 있으니 새로 받고, 계정 저장 모드면 계정 기록을 이 기기로
+  (async () => {
+    try {
+      await hub.me();
+      if (hub.saveMode === 'account' && (await hub.downloadSave()).length) {
+        reloadSaves();
+        if (!els.intro.hidden && document.body.dataset.page !== 'hub') renderIntro();
+      }
+    } catch {
+      /* 오프라인 등: 이 기기 기록으로 계속 */
+    }
+    syncLoginButton();
+  })();
+}

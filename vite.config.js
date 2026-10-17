@@ -7,6 +7,9 @@ const ROUTES = {
   '/api/comments': ['/lib/comment-handler.js', 'handleComments'],
   '/api/likes': ['/lib/like-handler.js', 'handleLikes'],
   '/api/log': ['/lib/log-handler.js', 'handleLog'],
+  '/api/auth': ['/lib/hub-handler.js', 'handleAuth'],
+  '/api/me': ['/lib/hub-handler.js', 'handleMe'],
+  '/api/admin': ['/lib/hub-handler.js', 'handleAdmin'],
 };
 
 function devApi(mode) {
@@ -20,7 +23,7 @@ function devApi(mode) {
             const handle = (await server.ssrLoadModule(file))[name];
             const url = new URL(req.url, 'http://localhost');
             let body;
-            if (req.method === 'POST' || req.method === 'DELETE') {
+            if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
               const chunks = [];
               for await (const c of req) chunks.push(c);
               const text = Buffer.concat(chunks).toString('utf8');
@@ -35,6 +38,7 @@ function devApi(mode) {
               query: Object.fromEntries(url.searchParams),
               body,
               ip: req.socket.remoteAddress ?? 'local',
+              headers: req.headers, // 로그인 토큰 · 운영진 코드
             });
             res.statusCode = out.status;
             res.setHeader('Content-Type', 'application/json');

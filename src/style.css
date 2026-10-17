@@ -687,3 +687,41 @@ a.rule-link:hover { color: var(--accent); text-decoration-style: solid; }
 @media (prefers-reduced-motion: reduce) {
   .rule-card.flash { animation: none; background-color: #fff3c4; }
 }
+
+/* ---------- 동아리 허브 ---------- */
+.topbar .login { background: #fff; color: var(--accent); }
+.mainnav { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.mainnav a {
+  padding: 8px 14px; border-radius: 12px; background: #fff; color: var(--ink); text-decoration: none; font-weight: 800;
+  border: 2px solid var(--line);
+}
+.mainnav a[aria-current='page'] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tabs[hidden] { display: none; }
+.hub-hello { font-size: 1.05rem; line-height: 1.8; }
+.hub-hello .btn { margin-left: 6px; }
+.hub-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 8px 0; }
+.hub-card {
+  display: grid; gap: 2px; padding: 14px; border-radius: 14px; background: #fff; border: 2px solid var(--line);
+  text-decoration: none; color: var(--ink);
+}
+.hub-card .i { font-size: 1.6rem; }
+.hub-card small { color: var(--muted); }
+.hub-card:hover { border-color: var(--accent); }
+.hub-card.soon { border-style: dashed; opacity: 0.8; }
+.role-badge { padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; background: var(--tab); color: #2f5a2f; }
+.role-badge[data-role='admin'] { background: var(--centre); color: var(--centre-ink); }
+.save-box { margin: 10px 0; padding: 12px 14px; border-radius: 14px; background: var(--tab); }
+.save-box h3 { margin: 0 0 4px; font-size: 1rem; }
+.save-modes { display: grid; gap: 6px; margin: 8px 0; }
+.save-modes label { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; padding: 8px 10px; border-radius: 10px; background: #fff; cursor: pointer; }
+.save-modes label small { grid-column: 2; color: var(--muted); }
+.login-dialog label { display: grid; gap: 4px; margin: 8px 0; font-weight: 700; }
+.login-dialog input { font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); }
+.admin-code, .admin-add { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
+.admin-add h3 { width: 100%; margin: 4px 0 0; font-size: 0.95rem; }
+.admin-code input, .admin-add input, .admin-add select { font: inherit; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); }
+.admin-table-wrap { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.admin-table th, .admin-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.admin-table tr.inactive { opacity: 0.5; }
+.admin-table .acts { display: flex; gap: 4px; }
