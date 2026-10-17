@@ -13,8 +13,11 @@ const time = (v) => {
   return Number.isFinite(t) ? new Date(t).toISOString() : null;
 };
 
-/** 투표 마감: 따로 정하지 않았으면 훈련 시작 시각 */
-export const deadlineOf = (ev) => ev.vote_deadline ?? ev.starts_at;
+/** 투표 마감을 따로 정하지 않으면 훈련 시작 2시간 전 */
+export const DEFAULT_DEADLINE_MS = 2 * 3_600_000;
+export const deadlineOf = (ev) => ev.vote_deadline ?? new Date(Date.parse(ev.starts_at) - DEFAULT_DEADLINE_MS).toISOString();
+/** 훈련 장소 고르기 (그 외는 직접 적기) */
+export const PLACES = Object.freeze(['전북사대부고 체육관', '전북사대부고 대운동장']);
 
 /** 지금 투표할 수 있나: 취소 · 운영진이 닫음 · 마감 지남이면 못 함 */
 export function voteOpen(ev, now = Date.now()) {

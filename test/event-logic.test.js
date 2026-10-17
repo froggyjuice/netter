@@ -6,10 +6,10 @@ import {
 
 const EV = { id: 7, title: '수요 훈련', starts_at: '2026-10-21T10:00:00.000Z', ends_at: '2026-10-21T12:00:00.000Z', place: '○○체육관', memo: '운동화 꼭!', status: 'active', vote_closed: false, vote_deadline: null };
 
-test('투표 마감: 기본은 시작 시각, 운영진이 닫거나 취소하면 못 함', () => {
-  assert.equal(deadlineOf(EV), EV.starts_at);
-  assert.ok(voteOpen(EV, Date.parse('2026-10-21T09:59:00Z')));
-  assert.ok(!voteOpen(EV, Date.parse('2026-10-21T10:00:00Z')));
+test('투표 마감: 기본은 훈련 시작 2시간 전, 운영진이 닫거나 취소하면 못 함', () => {
+  assert.equal(deadlineOf(EV), '2026-10-21T08:00:00.000Z');
+  assert.ok(voteOpen(EV, Date.parse('2026-10-21T07:59:00Z')));
+  assert.ok(!voteOpen(EV, Date.parse('2026-10-21T08:00:00Z')));
   assert.ok(!voteOpen({ ...EV, vote_closed: true }, 0));
   assert.ok(!voteOpen({ ...EV, status: 'cancelled' }, 0));
   assert.ok(!voteOpen({ ...EV, vote_deadline: '2026-10-20T00:00:00Z' }, Date.parse('2026-10-20T01:00:00Z')));
@@ -55,7 +55,7 @@ test('내 캘린더 추가: .ics · 구글 링크 · 카톡 문구', () => {
   assert.ok(ics.includes('DTSTART:20261021T100000Z') && ics.includes('DTEND:20261021T120000Z'));
   assert.ok(ics.includes('LOCATION:○○체육관'));
   assert.ok(googleCalendarUrl(EV).includes('dates=20261021T100000Z%2F20261021T120000Z'));
-  assert.ok(shareText(EV, { kind: 'invite', url: 'u' }).includes('투표 마감: 10월 21일 (수) 19:00'));
+  assert.ok(shareText(EV, { kind: 'invite', url: 'u' }).includes('투표 마감: 10월 21일 (수) 17:00'));
   assert.ok(shareText({ ...EV, notice: '체육관이 바뀌었어요' }, { kind: 'change' }).includes('→ 체육관이 바뀌었어요'));
   const lineup = { teams: [{ starters: { GS: { name: '가' }, C: { name: '나' } }, subs: [{ pos: 'C', player: { name: '다' } }] }] };
   const t = shareText(EV, { kind: 'lineup', lineup });

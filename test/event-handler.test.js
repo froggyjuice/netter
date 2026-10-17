@@ -98,5 +98,7 @@ test('인원 확정 → 포지션 배정 (참석만, 투표 닫힘), 다시 뽑�
   assert.equal(lineup.teams[0].subs.length, 0, '참석 7명');
   assert.ok(c.body.event.vote_closed && c.body.event.confirmed_at);
   assert.ok(!JSON.stringify(lineup).includes('wish'), '저장은 이름 · id 만');
+  await post(admin, { action: 'cancel', id });
+  assert.equal((await post(admin, { action: 'restore', id })).body.event.vote_closed, true, '확정한 훈련은 되살려도 투표는 닫힘');
   assert.equal((await post(admin, { action: 'unconfirm', id })).body.event.lineup, null);
 });

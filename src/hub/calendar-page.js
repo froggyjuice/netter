@@ -2,7 +2,7 @@
 // ctx: { hub, showToast, openLogin }
 import { HUB_ERROR_TEXT } from './hub-client.js';
 import {
-  ANSWER_LABEL, ANSWERS, LIMITS, voteOpen, deadlineOf, summarize, dayKey, whenText, toLocalInput, fromLocalInput, monthCells, icsFor, googleCalendarUrl, shareText,
+  ANSWER_LABEL, ANSWERS, LIMITS, PLACES, voteOpen, deadlineOf, summarize, dayKey, whenText, toLocalInput, fromLocalInput, monthCells, icsFor, googleCalendarUrl, shareText,
 } from '../shared/event-logic.js';
 import { COURT, defaultTeams } from '../shared/position-assign.js';
 
@@ -26,11 +26,11 @@ export async function renderCalendar(el, { hub, showToast, openLogin }) {
     <form class="ev-form" id="ev-form" hidden>
       <h3 id="ev-form-title">➕ 일정 만들기</h3>
       <label>제목 <input id="f-title" maxlength="${LIMITS.title}" placeholder="훈련" /></label>
-      <label>시작 <input id="f-start" type="datetime-local" required /></label>
-      <label>끝 (선택) <input id="f-end" type="datetime-local" /></label>
-      <label>장소 (선택) <input id="f-place" maxlength="${LIMITS.place}" placeholder="예) ○○체육관" /></label>
+      <label>날짜 · 시간 <input id="f-start" type="datetime-local" required /></label>
+      <label>장소 <select id="f-place-pick">${PLACES.map((p) => `<option value="${p}">${p}</option>`).join('')}<option value="">그 외 (직접 적기)</option></select></label>
+      <label id="f-place-row" hidden>장소 직접 적기 <input id="f-place" maxlength="${LIMITS.place}" placeholder="예) ○○공원 농구장" /></label>
       <label>메모 (선택) <textarea id="f-memo" rows="2" maxlength="${LIMITS.memo}" placeholder="준비물 · 전달 사항"></textarea></label>
-      <label>투표 마감 (선택 · 비우면 시작 시각) <input id="f-deadline" type="datetime-local" /></label>
+      <label>투표 마감 (선택 · 비우면 훈련 2시간 전) <input id="f-deadline" type="datetime-local" /></label>
       <label id="f-notice-row" hidden>변경 알림 (선택 · 쓰면 홈 배너로 알려요) <input id="f-notice" maxlength="${LIMITS.notice}" placeholder="예) 장소가 ○○체육관으로 바뀌었어요" /></label>
       <div class="row"><button type="button" class="btn ghost small" id="f-cancel">닫기</button><button type="submit" class="btn primary small" id="f-save">저장</button></div>
     </form>
@@ -293,8 +293,11 @@ export async function renderCalendar(el, { hub, showToast, openLogin }) {
     $('#ev-form-title').textContent = e ? '✏️ 일정 수정' : '➕ 일정 만들기';
     $('#f-title').value = e?.title ?? '훈련';
     $('#f-start').value = toLocalInput(e?.starts_at);
-    $('#f-end').value = toLocalInput(e?.ends_at);
-    $('#f-place').value = e?.place ?? '';
+    // 장소: 목록에 있으면 고르고, 없으면 '그 외'에 직접 적기 (새 일정은 체육관)
+    const place = e ? e.place ?? '' : PLACES[0];
+    $('#f-place-pick').value = PLACES.includes(place) ? place : '';
+    $('#f-place').value = PLACES.includes(place) ? '' : place;
+    $('#f-place-row').hidden = PLACES.includes(place);
     $('#f-memo').value = e?.memo ?? '';
     $('#f-deadline').value = toLocalInput(e?.vote_deadline);
     $('#f-notice-row').hidden = !e;
@@ -302,6 +305,10 @@ export async function renderCalendar(el, { hub, showToast, openLogin }) {
     form.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
   $('#ev-new')?.addEventListener('click', () => openForm());
+  $('#f-place-pick').addEventListener('change', () => {
+    $('#f-place-row').hidden = Boolean($('#f-place-pick').value);
+    if (!$('#f-place-pick').value) $('#f-place').focus();
+  });
   $('#f-cancel').addEventListener('click', () => {
     form.hidden = true;
   });
@@ -310,8 +317,8 @@ export async function renderCalendar(el, { hub, showToast, openLogin }) {
     const event = {
       title: $('#f-title').value,
       starts_at: fromLocalInput($('#f-start').value),
-      ends_at: fromLocalInput($('#f-end').value),
-      place: $('#f-place').value,
+      ends_at: null, // 끝 시각은 받지 않는다 (날짜 · 시간 하나)
+      place: $('#f-place-pick').value || $('#f-place').value,
       memo: $('#f-memo').value,
       vote_deadline: fromLocalInput($('#f-deadline').value),
     };

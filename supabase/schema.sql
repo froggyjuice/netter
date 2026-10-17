@@ -144,7 +144,7 @@ create table if not exists public.events (
   ends_at        timestamptz,
   place          text        check (char_length(place) <= 60),
   memo           text        check (char_length(memo) <= 300),
-  vote_deadline  timestamptz,                 -- 비우면 시작 시각
+  vote_deadline  timestamptz,                 -- 비우면 훈련 시작 2시간 전
   vote_closed    boolean     not null default false,
   status         text        not null default 'active' check (status in ('active', 'cancelled')),
   notice         text        check (char_length(notice) <= 200),   -- 취소 · 변경 알림 (홈 배너)
