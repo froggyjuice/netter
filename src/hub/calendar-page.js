@@ -5,6 +5,7 @@ import {
   ANSWER_LABEL, ANSWERS, LIMITS, PLACES, DEFAULT_TITLE, voteOpen, deadlineOf, summarize, dayKey, whenText, toLocalInput, fromLocalInput, monthCells, icsFor, googleCalendarUrl, shareText,
 } from '../shared/event-logic.js';
 import { COURT, defaultTeams } from '../shared/position-assign.js';
+import { createExtras } from './calendar-extras.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const errText = (err) => HUB_ERROR_TEXT[err?.code] ?? '잠시 뒤 다시 시도해 주세요.';
@@ -39,14 +40,20 @@ export async function renderCalendar(el, { hub, showToast, openLogin }) {
       <div class="cal-nav"><button type="button" class="pg" id="m-prev" aria-label="이전 달">‹</button><b id="m-title"></b><button type="button" class="pg" id="m-next" aria-label="다음 달">›</button></div>
       <div class="cal-grid" id="cal-grid"></div>
     </section>
+    <p class="ev-notice" id="cal-not-ready" hidden>🛠️ 캘린더를 준비하고 있어요. ${isAdmin ? '(운영진: Supabase SQL Editor 에서 schema.sql 의 허브 2단계 부분을 실행해 주세요)' : '조금만 기다려 주세요!'}</p>
+    <section id="cal-polls"></section>
     <h3 class="cal-h">다가오는 훈련</h3>
     <div class="ev-list" id="ev-upcoming"><p class="muted small">불러오는 중…</p></div>
-    <details class="ev-past"><summary>지난 훈련</summary><div class="ev-list" id="ev-past"></div></details>`;
+    <details class="ev-past"><summary>지난 훈련</summary><div class="ev-list" id="ev-past"></div></details>
+    <section id="cal-ranking"></section>`;
   const $ = (s) => el.querySelector(s);
   $('#cal-login')?.addEventListener('click', (e) => {
     e.preventDefault();
     openLogin();
   });
+
+  // 날짜 정하기 투표 · 출석 순위 · 학기 (calendar-extras.js)
+  const extras = createExtras(el, { hub, showToast, isAdmin, getData: () => data, reload: () => load() });
 
   // ----- 불러오기 · 그리기 -----
   async function load() {
@@ -80,6 +87,8 @@ export async function renderCalendar(el, { hub, showToast, openLogin }) {
     const past = data.events.filter((e) => !upcoming.includes(e)).reverse();
     $('#ev-upcoming').innerHTML = upcoming.length ? upcoming.map(card).join('') : '<p class="muted small">다가오는 훈련이 없어요.</p>';
     $('#ev-past').innerHTML = past.length ? past.map(card).join('') : '<p class="muted small">지난 훈련이 없어요.</p>';
+    $('#cal-not-ready').hidden = !data.not_ready;
+    extras.draw();
   }
 
   // ----- 일정 카드 -----

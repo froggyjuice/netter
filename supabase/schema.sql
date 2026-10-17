@@ -171,5 +171,38 @@ create table if not exists public.event_votes (
 );
 alter table public.event_votes enable row level security;
 
+-- 날짜 정하기 투표: 운영진이 후보 날짜를 올리고, 회원이 되는 날을 체크, 운영진이 정하면 훈련 일정이 만들어진다
+create table if not exists public.polls (
+  id              bigint generated always as identity primary key,
+  title           text        not null check (char_length(title) between 1 and 40),
+  memo            text        check (char_length(memo) <= 300),
+  options         jsonb       not null,             -- [{ id, starts_at, place }]
+  deadline        timestamptz,
+  status          text        not null default 'open' check (status in ('open', 'closed', 'decided')),
+  event_id        bigint      references public.events (id) on delete set null,
+  decided_option  int,
+  created_by      bigint      references public.members (id) on delete set null,
+  created_at      timestamptz not null default now()
+);
+alter table public.polls enable row level security;
+
+create table if not exists public.poll_votes (
+  poll_id     bigint      not null references public.polls (id) on delete cascade,
+  member_id   bigint      not null references public.members (id) on delete cascade,
+  picks       int[]       not null default '{}',
+  updated_at  timestamptz not null default now(),
+  primary key (poll_id, member_id)
+);
+alter table public.poll_votes enable row level security;
+
+-- 학기 (출석 순위 '이번 학기' 기준): 운영진이 시작일 · 끝일을 정한다
+create table if not exists public.semesters (
+  id         bigint generated always as identity primary key,
+  name       text not null check (char_length(name) between 1 and 20),
+  starts_on  date not null,
+  ends_on    date not null check (ends_on >= starts_on)
+);
+alter table public.semesters enable row level security;
+
 -- 첫 운영진(본인) 등록: 이름과 전화번호를 바꿔서 한 번 실행하세요.
 -- insert into public.members (name, phone, role) values ('홍길동', '01012345678', 'admin');

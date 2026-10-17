@@ -102,3 +102,51 @@ test('인원 확정 → 포지션 배정 (참석만, 투표 닫힘), 다시 뽑�
   assert.equal((await post(admin, { action: 'restore', id })).body.event.vote_closed, true, '확정한 훈련은 되살려도 투표는 닫힘');
   assert.equal((await post(admin, { action: 'unconfirm', id })).body.event.lineup, null);
 });
+
+test('날짜 정하기 투표: 운영진이 후보를 올리고 → 회원 체크 → 정하면 훈련 일정이 생김', async () => {
+  const { admin, ms, post, get } = await setup();
+  assert.equal((await post(ms[0], { action: 'pollCreate', poll: {} })).body.error, 'not_admin');
+  const poll = (await post(admin, { action: 'pollCreate', poll: { title: '11월 첫 훈련', options: [{ starts_at: '2026-11-05T10:00:00Z' }, { starts_at: '2026-11-06T10:00:00Z', place: '대운동장' }] } })).body.poll;
+  await post(ms[0], { action: 'pollVote', id: poll.id, picks: [1, 2] });
+  await post(ms[1], { action: 'pollVote', id: poll.id, picks: [2] });
+  const view = (await get(ms[2])).body.polls[0];
+  assert.deepEqual(view.options.map((o) => [o.count, o.best]), [[1, false], [2, true]]);
+  assert.deepEqual(view.options[1].names, ['회원0', '회원1']);
+  assert.deepEqual((await get(ms[0])).body.polls[0].my_picks, [1, 2]);
+  assert.deepEqual((await get(null)).body.polls[0].options[1].names, [], '로그인 안 하면 이름 없이');
+  const decided = await post(admin, { action: 'pollDecide', id: poll.id, option: 2 });
+  assert.equal(decided.body.event.starts_at, '2026-11-06T10:00:00.000Z');
+  assert.equal(decided.body.event.place, '대운동장');
+  assert.equal(decided.body.event.title, '목요 정기 훈련');
+  assert.equal((await post(ms[2], { action: 'pollVote', id: poll.id, picks: [1] })).body.error, 'poll_closed');
+  assert.equal((await post(admin, { action: 'pollDecide', id: poll.id, option: 1 })).body.error, 'poll_decided');
+});
+
+test('학기 · 출석 순위: 회원은 1~3위, 운영진은 전체', async () => {
+  const { admin, ms, post, get, events } = await setup();
+  assert.equal((await post(admin, { action: 'semesterSave', semester: { name: '2학기', starts_on: '2026-09-01', ends_on: '2026-08-01' } })).body.error, 'bad_semester');
+  await post(admin, { action: 'semesterSave', semester: { name: '2학기', starts_on: '2026-09-01', ends_on: '2026-12-20' } });
+  // 지난 훈련 2번: 4명이 차례로 출석 수가 다르게
+  for (const [day, who] of [['2026-10-06', [0, 1, 2, 3, 4]], ['2026-10-13', [0, 1, 2]]]) {
+    const e = await events.createEvent({ title: '훈련', starts_at: `${day}T10:00:00.000Z` });
+    for (const i of who) await events.putVote(e.id, ms[i].id, { answer: 'yes', wish: [], fallback: 'random' });
+  }
+  const forMember = (await get(ms[5])).body.ranking;
+  assert.equal(forMember.month.label, '10월');
+  assert.equal(forMember.month.total, 2);
+  assert.deepEqual(forMember.month.rows.map((r) => [r.name, r.count, r.rank]), [['회원0', 2, 1], ['회원1', 2, 1], ['회원2', 2, 1]]);
+  assert.equal(forMember.month.full, false);
+  const forAdmin = (await get(admin)).body.ranking;
+  assert.equal(forAdmin.semester.label, '2학기');
+  assert.equal(forAdmin.semester.rows.length, 5, '운영진은 전체 순위');
+  assert.equal((await get(null)).body.ranking, null);
+});
+
+test('표가 아직 없으면(SQL 실행 전) 500 대신 not_ready', async () => {
+  const members = memoryMemberStore();
+  const broken = { listEvents: async () => { throw new Error('relation "events" does not exist'); } };
+  const handle = createEventHandler({ eventStore: broken, memberStore: members, env: ENV, now: () => NOW });
+  const out = await handle({ method: 'GET', headers: {}, query: {} });
+  assert.equal(out.status, 200);
+  assert.equal(out.body.not_ready, true);
+});
