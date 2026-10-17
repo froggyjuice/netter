@@ -618,19 +618,8 @@ body[data-game='pass'] .stage-brief {
 /* 게임 소개: 이런 분께 추천 */
 .audience { margin: -4px 0 12px; padding: 6px 12px; border-radius: 10px; background: #f3f0e2; font-size: 0.86rem; }
 .audience b { color: #86602a; margin-right: 4px; }
-/* 넷볼 규칙 사전: 5개씩 쪽 나누기 */
-.rule-pages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 0 0 10px; }
-.rule-pages button {
-  display: grid; gap: 0; padding: 6px 4px; border-radius: 10px; border: 2px dashed #a9cfa9; background: #fff; cursor: pointer;
-  font: inherit; color: var(--ink); text-align: center;
-}
-.rule-pages button small { font-size: 0.7rem; color: var(--muted); }
-.rule-pages button[aria-current='true'] { border-style: solid; border-color: var(--accent); background: var(--tab-on); }
-.rule-pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 12px 0 0; }
-.rule-pager .btn:disabled { opacity: 0.4; cursor: default; }
-
 /* 넷볼 규칙 사전: 책장을 넘기는 느낌 */
-.book { perspective: 1600px; margin: 0 0 4px; }
+.book { position: relative; perspective: 2200px; margin: 0 0 4px; scroll-margin-top: 8px; }
 .book-page {
   position: relative; padding: 18px 18px 10px 26px; border-radius: 4px 14px 14px 4px;
   background:
@@ -650,24 +639,74 @@ body[data-game='pass'] .stage-brief {
 }
 .book-page .rule-card { background: rgba(255, 255, 255, 0.72); border-color: #e9e0c9; }
 .book-foot { margin: 10px 0 0; text-align: center; font-size: 0.82rem; color: #a08e66; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
-.book-page.turn-next { animation: page-turn-next 0.55s cubic-bezier(0.3, 0.7, 0.4, 1); }
-.book-page.turn-prev { animation: page-turn-prev 0.55s cubic-bezier(0.3, 0.7, 0.4, 1); transform-origin: right center; }
-@keyframes page-turn-next {
-  0% { transform: rotateY(70deg); opacity: 0.15; box-shadow: -12px 6px 24px rgba(80, 60, 20, 0.22); } /* 책 등(왼쪽)을 축으로, 화면 안쪽에서 넘어온다 */
-  60% { opacity: 1; }
-  100% { transform: rotateY(0); }
+/* 쪽 넘기기: 오른쪽 아래 귀퉁이가 접혀 올라가고(--fold), 책 등(왼쪽)을 축으로 종이가 넘어간다 */
+@property --fold { syntax: '<length>'; inherits: true; initial-value: 0px; }
+.leaf {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+  transform-origin: left center; transform-style: preserve-3d; pointer-events: none;
+  animation: leaf-turn 0.9s both;
 }
-@keyframes page-turn-prev {
-  0% { transform: rotateY(-70deg); opacity: 0.15; box-shadow: 12px 6px 24px rgba(80, 60, 20, 0.22); }
-  60% { opacity: 1; }
-  100% { transform: rotateY(0); }
+.leaf-prev { animation-direction: reverse; animation-timing-function: linear; }
+.leaf-front, .leaf-back {
+  border-radius: 4px 14px 14px 4px; backface-visibility: hidden;
+  background:
+    linear-gradient(90deg, rgba(120, 100, 60, 0.16), rgba(120, 100, 60, 0) 22px),
+    repeating-linear-gradient(0deg, transparent 0 27px, rgba(160, 140, 100, 0.08) 27px 28px),
+    #fbf7ec;
 }
+.leaf-front {
+  position: relative; padding: 18px 18px 10px 26px; border-left: 4px solid #c9b78f;
+  /* 접힌 귀퉁이만큼 잘라 내고(아래 새 쪽이 보임), 접힌 조각은 ::after 로 그린다 */
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--fold)), calc(100% - var(--fold)) 100%, 0 100%);
+}
+.leaf-front .rule-card { background: rgba(255, 255, 255, 0.72); border-color: #e9e0c9; }
+.leaf-front::before { /* 들려 올라가며 생기는 그늘 */
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: linear-gradient(270deg, rgba(80, 60, 20, 0.22), rgba(80, 60, 20, 0) 45%);
+  animation: leaf-shade 0.9s both; animation-direction: inherit;
+}
+.leaf-front::after { /* 접혀 올라온 귀퉁이 (종이 뒷면) */
+  content: ''; position: absolute; right: 0; bottom: 0; width: var(--fold); height: var(--fold);
+  background: linear-gradient(315deg, transparent 50%, #e9dcbd 50%, #f8f1e1 85%);
+  filter: drop-shadow(-3px -3px 4px rgba(80, 60, 20, 0.18));
+}
+.leaf-front { animation: leaf-fold 0.9s both; animation-direction: inherit; }
+.leaf-back {
+  position: absolute; inset: 0; transform: rotateY(180deg);
+  background: linear-gradient(90deg, rgba(80, 60, 20, 0.12), rgba(80, 60, 20, 0) 60%), #f6efdc;
+}
+@keyframes leaf-turn {
+  0% { transform: rotateY(0); animation-timing-function: ease-in; }
+  28% { transform: rotateY(-12deg) rotateZ(-0.6deg); animation-timing-function: ease-in-out; } /* 오른쪽이 먼저 들리며 살짝 떠오름 */
+  100% { transform: rotateY(-180deg); }
+}
+@keyframes leaf-fold {
+  0% { --fold: 0px; }
+  28% { --fold: 120px; }
+  60% { --fold: 170px; }
+  100% { --fold: 200px; }
+}
+@keyframes leaf-shade {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+/* 이전 쪽으로 넘길 때: 되돌아온 종이가 덮기 전까지 아래 쪽 글씨를 감춘다 */
+.book-page.under-old > * { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
-  .book-page.turn-next, .book-page.turn-prev { animation: none; }
+  .leaf { display: none; }
 }
-/* 목차(쪽 고르기)도 책 색에 맞춰 */
-.rule-pages button { background: #fbf7ec; border-color: #d9cba6; }
-.rule-pages button[aria-current='true'] { background: #f1e6c8; border-color: #b9a274; }
+
+/* 맨 아래 쪽 번호: ‹ 1 2 3 4 5 › */
+.rule-pager { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 14px 0 0; }
+.rule-pager .pg {
+  min-width: 36px; height: 36px; padding: 0 6px; border-radius: 999px; border: 2px solid transparent;
+  background: transparent; color: #8a7650; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+}
+.rule-pager .pg:hover:not(:disabled) { background: #f6efdc; }
+.rule-pager .pg[aria-current='true'] { background: #f1e6c8; border-color: #b9a274; color: var(--ink); }
+.rule-pager .pg-arrow { font-size: 1.4rem; line-height: 1; }
+.rule-pager .pg:disabled { opacity: 0.3; cursor: default; }
 
 /* 설명 속 규칙 낱말 → 넷볼 규칙 사전 링크 */
 a.rule-link { color: inherit; text-decoration: underline dotted #8fb59a; text-underline-offset: 3px; text-decoration-thickness: 1.5px; }

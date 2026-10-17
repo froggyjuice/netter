@@ -760,9 +760,6 @@ function renderRulesPage(focusNo) {
     </div>
     <p class="muted small">World Netball「Rules of Netball」2024를 놀이터가 직접 풀어 쓴 요약이에요. 정확한 원문은 공식 사이트(영문, 무료)에서 확인하세요.</p>
     <input class="rule-search" id="rule-search" type="search" placeholder="🔍 찾기 — 예) 3초, 오프사이드, 페널티 패스" aria-label="규칙 찾기" />
-    <nav class="rule-pages" id="rule-pages" aria-label="목차">${pages
-      .map((p, i) => `<button type="button" data-page="${i}"><b>${i + 1}쪽</b><small>${range(p)}</small></button>`)
-      .join('')}</nav>
     <div class="book" id="book">
       <div class="book-page" id="book-page">
         <div class="rule-list" id="rule-list"></div>
@@ -770,35 +767,79 @@ function renderRulesPage(focusNo) {
         <p class="book-foot" id="book-foot"></p>
       </div>
     </div>
-    <div class="rule-pager" id="rule-pager">
-      <button type="button" class="btn small" id="rule-prev">◀ 이전 쪽</button>
-      <span class="muted small" id="rule-page-no"></span>
-      <button type="button" class="btn small" id="rule-next">다음 쪽 ▶</button>
-    </div>`;
+    <nav class="rule-pager" id="rule-pager" aria-label="쪽 넘기기">
+      <button type="button" class="pg pg-arrow" id="rule-prev" aria-label="이전 쪽">‹</button>
+      ${pages.map((p, i) => `<button type="button" class="pg" data-page="${i}" title="${range(p)}" aria-label="${i + 1}쪽 (${range(p)})">${i + 1}</button>`).join('')}
+      <button type="button" class="pg pg-arrow" id="rule-next" aria-label="다음 쪽">›</button>
+    </nav>`;
   const list = $('#rule-list');
   const sheet = $('#book-page');
-  /** 쪽을 넘긴다: 다음 쪽은 오른쪽에서, 이전 쪽은 왼쪽에서 책장이 넘어오듯 (움직임 줄이기 설정이면 바로) */
-  const turn = (dir) => {
-    sheet.classList.remove('turn-next', 'turn-prev');
-    void sheet.offsetWidth; // 애니메이션을 처음부터 다시
-    if (dir) sheet.classList.add(dir > 0 ? 'turn-next' : 'turn-prev');
+  const book = $('#book');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  let finishFlip = null; // 넘기는 중인 책장을 바로 끝내기
+  /** 지금 책장 내용을 복사한 '넘어가는 종이' (id 는 겹치지 않게 지운다) */
+  const makeLeaf = (dir) => {
+    const leaf = document.createElement('div');
+    leaf.className = `leaf ${dir > 0 ? 'leaf-next' : 'leaf-prev'}`;
+    leaf.setAttribute('aria-hidden', 'true');
+    leaf.innerHTML = `<div class="leaf-front">${sheet.innerHTML}</div><div class="leaf-back"></div>`;
+    leaf.querySelectorAll('[id]').forEach((e) => e.removeAttribute('id'));
+    return leaf;
+  };
+  const fill = () => {
+    list.innerHTML = pages[page].map(card).join('');
+    $('#book-foot').hidden = false;
+    $('#book-foot').textContent = `— ${page + 1} —`;
+    $('#rule-empty').hidden = true;
+  };
+  /**
+   * 쪽 넘기기: 오른쪽 아래 귀퉁이부터 종이가 들려 올라가 책 등(왼쪽)을 축으로 넘어간다.
+   * 다음 쪽: 지금 종이가 넘어가고 아래에 새 쪽이 보인다. 이전 쪽: 왼쪽에 넘겨 둔 종이가 거꾸로 되돌아와 덮는다.
+   */
+  const flip = (dir, after) => {
+    finishFlip?.();
+    if (!dir || reduceMotion.matches) {
+      fill();
+      after?.();
+      return;
+    }
+    // 책장이 길어서, 3D 시점을 화면에 보이는 부분의 가운데에 둔다
+    const r = book.getBoundingClientRect();
+    const mid = (Math.max(r.top, 0) + Math.min(r.bottom, innerHeight)) / 2 - r.top;
+    book.style.perspectiveOrigin = `50% ${Math.round(mid)}px`;
+    let leaf;
+    if (dir > 0) {
+      leaf = makeLeaf(dir); // 옛 쪽을 들고
+      fill(); // 아래에는 새 쪽
+    } else {
+      fill();
+      leaf = makeLeaf(dir); // 새 쪽이 왼쪽에서 되돌아온다
+      sheet.classList.add('under-old'); // 덮을 때까지 아래 쪽 글씨는 감춘다 (옛 쪽 대신 빈 종이처럼)
+    }
+    book.append(leaf);
+    const done = () => {
+      leaf.remove();
+      sheet.classList.remove('under-old');
+      finishFlip = null;
+      after?.();
+    };
+    finishFlip = done;
+    leaf.addEventListener('animationend', (e) => {
+      if (e.target === leaf) done();
+    });
   };
   const showPage = (i, scroll = true) => {
     const next = Math.max(0, Math.min(pages.length - 1, i));
     const dir = scroll && next !== page ? Math.sign(next - page) : 0;
     page = next;
-    list.innerHTML = pages[page].map(card).join('');
-    turn(dir);
-    $('#book-foot').hidden = false;
-    $('#book-foot').textContent = `— ${page + 1} —`;
-    $('#rule-empty').hidden = true;
-    $('#rule-pages').hidden = false;
+    // 아래쪽 번호를 눌렀으면 그 자리에서 책장을 넘긴 뒤 책 맨 위로
+    flip(dir, () => {
+      if (scroll && book.getBoundingClientRect().top < 0) book.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    });
     $('#rule-pager').hidden = false;
-    els.intro.querySelectorAll('#rule-pages button').forEach((b) => b.setAttribute('aria-current', String(Number(b.dataset.page) === page)));
-    $('#rule-page-no').textContent = `${page + 1} / ${pages.length}쪽`;
+    els.intro.querySelectorAll('#rule-pager [data-page]').forEach((b) => b.setAttribute('aria-current', String(Number(b.dataset.page) === page)));
     $('#rule-prev').disabled = page === 0;
     $('#rule-next').disabled = page === pages.length - 1;
-    if (scroll) $('#rule-pages').scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
   // 폰: 책장을 옆으로 밀어 넘기기 (검색 중에는 쪽이 없다)
   let swipeX = null;
@@ -812,7 +853,7 @@ function renderRulesPage(focusNo) {
     if (Math.abs(dx) > 60) showPage(page + (dx < 0 ? 1 : -1));
   });
   rulesTurn = (d) => showPage(page + d); // ← → 키 (아래 keydown)
-  els.intro.querySelectorAll('#rule-pages button').forEach((b) => b.addEventListener('click', () => showPage(Number(b.dataset.page))));
+  els.intro.querySelectorAll('#rule-pager [data-page]').forEach((b) => b.addEventListener('click', () => showPage(Number(b.dataset.page))));
   $('#rule-prev').addEventListener('click', () => showPage(page - 1));
   $('#rule-next').addEventListener('click', () => showPage(page + 1));
   // 찾기: 낱말이 있으면 쪽 구분 없이 찾은 규칙을 모두 보여준다
@@ -822,12 +863,11 @@ function renderRulesPage(focusNo) {
       showPage(page, false);
       return;
     }
+    finishFlip?.();
     const found = searchRules(q);
     list.innerHTML = found.map(card).join('');
-    turn(0);
     $('#book-foot').hidden = true;
     $('#rule-empty').hidden = found.length > 0;
-    $('#rule-pages').hidden = true;
     $('#rule-pager').hidden = true;
   });
   showPage(page, false);
