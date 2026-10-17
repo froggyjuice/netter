@@ -968,7 +968,10 @@ mark.hl { background: linear-gradient(transparent 35%, #b9e6a0 35%, #b9e6a0 92%,
 .ev-answers, .ev-pos { display: flex; flex-wrap: wrap; gap: 6px; }
 .ev-pos .small-chip { min-width: 44px; padding: 4px 8px; }
 .ev-vote label { margin-right: 8px; white-space: nowrap; }
-.ev-who p { margin: 2px 0; }
+.ev-who { display: grid; gap: 4px; }
+.ev-who details { padding: 6px 10px; border-radius: 10px; background: var(--tab); }
+.ev-who summary { cursor: pointer; }
+.ev-who p { margin: 6px 0 0; }
 .ev-name { display: inline-block; margin: 2px 4px 2px 0; padding: 1px 8px; border-radius: 999px; background: var(--tab); font-size: 0.85rem; }
 .ev-name small { color: var(--muted); margin-left: 2px; }
 .ev-lineup { padding: 10px; border-radius: 12px; background: var(--ok-soft); }

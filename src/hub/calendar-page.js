@@ -18,6 +18,7 @@ export async function renderCalendar(el, { hub, showToast, openLogin }) {
   const t = todayKey().split('-').map(Number);
   let month = { y: t[0], m: t[1] };
   const open = new Set(); // 펼친 일정 id
+  const openWho = new Set(); // 펼친 참석 · 미정 · 불참 명단 ('일정id-답'), 다시 그려도 그대로
   let editing = null; // 수정 중인 일정 (null 이면 새로 만들기)
 
   el.innerHTML = `
@@ -158,11 +159,18 @@ export async function renderCalendar(el, { hub, showToast, openLogin }) {
       ${e.memo ? `<p class="ev-memo">${esc(e.memo)}</p>` : ''}
       ${voteBox}
       ${e.votes
-        ? `<div class="ev-who">
-            <p><b>✅ 참석 ${s.yes.length}</b> ${s.yes.map(who).join('')}</p>
-            <p><b>🤔 미정 ${s.maybe.length}</b> ${s.maybe.map(who).join('')}</p>
-            <p><b>❌ 불참 ${s.no.length}</b> ${s.no.map(who).join('')}</p>
-          </div>`
+        ? `<div class="ev-who">${[
+            ['yes', '✅ 참석'],
+            ['maybe', '🤔 미정'],
+            ['no', '❌ 불참'],
+          ]
+            .map(
+              ([k, label]) => `<details data-who="${e.id}-${k}" ${openWho.has(`${e.id}-${k}`) ? 'open' : ''}>
+                <summary><b>${label} ${s[k].length}명</b></summary>
+                <p>${s[k].length ? s[k].map(who).join('') : '<span class="muted small">아직 없어요</span>'}</p>
+              </details>`,
+            )
+            .join('')}</div>`
         : ''}
       ${lineup}
       <div class="row wrap ev-share">
@@ -199,6 +207,13 @@ export async function renderCalendar(el, { hub, showToast, openLogin }) {
     }
   };
 
+  // 명단 토글: 펼침 상태를 기억해 두고 다시 그릴 때 그대로
+  el.addEventListener('toggle', (ev) => {
+    const d = ev.target;
+    if (!(d instanceof HTMLDetailsElement) || !d.dataset.who) return;
+    if (d.open) openWho.add(d.dataset.who);
+    else openWho.delete(d.dataset.who);
+  }, true);
   el.addEventListener('click', async (ev) => {
     const day = ev.target.closest('[data-day]');
     if (day) {
