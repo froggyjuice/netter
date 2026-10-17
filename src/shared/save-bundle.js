@@ -1,10 +1,11 @@
 // 놀이터 기록 묶음: 이 기기(localStorage) ↔ 내 계정(/api/me) 사이에서 옮기는 단위.
-// 존 스네이크 배지 · 리듬 슈팅 최고 기록과 배지 · 패스 퍼즐 별 (각 키의 저장 문자열 그대로)
-export const SAVE_KEYS = Object.freeze(['netball.profile', 'netball.rhythm', 'netball.pass']);
+// 존 스네이크 배지 · 리듬 슈팅 최고 기록과 배지 · 패스 퍼즐 별 · 넷볼 규칙 사전 형광펜 (각 키의 저장 문자열 그대로)
+export const SAVE_KEYS = Object.freeze(['netball.profile', 'netball.rhythm', 'netball.pass', 'netball.highlights']);
 export const SAVE_LABELS = Object.freeze({
   'netball.profile': '🐍 존 스네이크 배지',
   'netball.rhythm': '🎯 리듬 슈팅 최고 기록 · 배지',
   'netball.pass': '🧩 패스 퍼즐 별',
+  'netball.highlights': '🖍️ 규칙 사전 형광펜',
 });
 
 /** 이 기기의 기록을 묶는다. get: (key) => 문자열|null */

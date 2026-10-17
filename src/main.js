@@ -17,6 +17,7 @@ import { drawCourtPreview } from './ui/court-preview.js';
 import * as audio from './shared/audio.js';
 import { setupInstall } from './ui/install.js';
 import { RULEBOOK, OFFICIAL_RULES_URL, searchRules, chapterOf } from './shared/rulebook.js';
+import { HIGHLIGHT_KEY, parseHighlights, addHighlight, removeHighlight, markedHtml, lineKey } from './shared/highlights.js';
 import { linkifyRules } from './ui/rule-links.js';
 import { drawDevPreview } from './ui/dev-preview.js';
 import { drawRuleSceneReady } from './ui/rule-scenes.js';
@@ -227,6 +228,7 @@ function renderTabs(activeId = current.id) {
 }
 
 function route() {
+  if (hlPop) hlPop.hidden = true; // 다른 화면으로 가면 형광펜 버튼 닫기
   const wasPlaying = !els.stage.hidden;
   stopGame();
   const id = location.hash.replace(/^#\/?/, '');
@@ -714,6 +716,19 @@ async function setupLikes() {
 // ---------- 넷볼 규칙 사전 (Rule 1~21 요약 · 5개씩 쪽 나누기 · 검색 · 연습 게임 연결) ----------
 const RULES_PER_PAGE = 5; // 한 쪽에 규칙 5개 (Rule 1~21 → 5쪽)
 let rulesTurn = null; // 넷볼 규칙 사전이 열려 있을 때 쪽 넘기기
+let rulesOnSelect = null; // 넷볼 규칙 사전이 열려 있을 때 글자 고르기 → 형광펜 버튼
+document.addEventListener('selectionchange', () => rulesOnSelect?.());
+const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+/** 형광펜 버튼 (칠하기 · 지우기): 페이지에 하나만 두고 글자 아래에 띄운다 */
+let hlPop = null;
+function highlightPop() {
+  if (!hlPop) {
+    hlPop = Object.assign(document.createElement('button'), { type: 'button', className: 'hl-pop', hidden: true });
+    hlPop.addEventListener('pointerdown', (e) => e.preventDefault()); // 누르는 순간 글자 선택이 풀리지 않게
+    document.body.append(hlPop);
+  }
+  return hlPop;
+}
 // ← → 키로 책장 넘기기 (넷볼 규칙 사전에서만, 글자 입력 중이 아닐 때)
 window.addEventListener('keydown', (e) => {
   if (document.body.dataset.page !== 'rules' || !rulesTurn || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -729,10 +744,20 @@ function renderRulesPage(focusNo) {
     if (!g.ready) return `<a class="rule-game dev" href="#/${g.id}" title="개발 중이에요">${g.icon} ${g.title} <small>(개발 중)</small></a>`;
     return `<a class="rule-game" href="#/${g.id}">${g.icon} ${g.title}</a>`;
   };
+  // 형광펜: 이 기기 / 계정(로그인 + 계정 저장)에 놀이터 기록과 함께 저장
+  let marks = parseHighlights(store.get(HIGHLIGHT_KEY));
+  const lineHtml = (r, i) => markedHtml(r.points[i].t, marks[lineKey(r.no, i)], escHtml);
   const card = (r) => `
     <article class="rule-card" id="rule-${r.no}">
       <h3><span class="rule-no">Rule ${r.no}</span> ${r.title}</h3>
-      <ul>${r.points.map((p) => `<li>${p}</li>`).join('')}</ul>
+      <ul class="rule-lines">${r.points.map((p, i) => `<li data-line="${lineKey(r.no, i)}">${lineHtml(r, i)}</li>`).join('')}</ul>
+      <details class="rule-src">
+        <summary>📜 근거 원문보기</summary>
+        <ol>${r.points
+          .map((p) => `<li><b>Rule ${escHtml(p.ref)}</b> <span class="muted small">· 규정집 ${p.p}쪽</span><br /><q lang="en">${escHtml(p.en)}</q></li>`)
+          .join('')}</ol>
+        <p class="small muted">위 줄과 같은 순서예요. 원문은 저작권 때문에 핵심 구절만 보여 줘요 — <a href="${OFFICIAL_RULES_URL}" target="_blank" rel="noopener">공식 규정집 전체 보기 ↗</a></p>
+      </details>
       ${r.games.length ? `<p class="rule-games">🎮 연습해요: ${r.games.map(gameLink).join(' ')}</p>` : ''}
     </article>`;
   const pages = [];
@@ -748,8 +773,9 @@ function renderRulesPage(focusNo) {
       <h2>📖 넷볼 규칙 사전</h2>
       <a class="btn small help-btn" href="${OFFICIAL_RULES_URL}" target="_blank" rel="noopener">🌐 공식 규정집 보기</a>
     </div>
-    <p class="muted small">World Netball「Rules of Netball」2024를 Netter가 직접 풀어 쓴 요약이에요. 정확한 원문은 공식 사이트(영문, 무료)에서 확인하세요.</p>
+    <p class="muted small">World Netball「Rules of Netball」2024를 AI가 풀어 쓴 요약이에요. 정확한 원문은 공식 사이트(영문, 무료)에서 확인하세요. ٩(•᎑•)✦</p>
     ${todayRuleHtml()}
+    <p class="hl-tip small muted">🖍️ 글자를 드래그해서(폰은 길게 눌러) 고르면 형광펜으로 칠할 수 있어요. 칠한 곳을 누르면 지워요. ${hub.saveMode === 'account' ? '내 계정에 저장돼요.' : '이 기기에 저장돼요.'}</p>
     <input class="rule-search" id="rule-search" type="search" placeholder="🔍 찾기 — 예) 3초, 오프사이드, 페널티 패스" aria-label="규칙 찾기" />
     <div class="book" id="book">
       <div class="book-page" id="book-page">
@@ -822,6 +848,7 @@ function renderRulesPage(focusNo) {
     });
   };
   const showPage = (i, scroll = true) => {
+    highlightPop().hidden = true;
     const next = Math.max(0, Math.min(pages.length - 1, i));
     const dir = scroll && next !== page ? Math.sign(next - page) : 0;
     page = next;
@@ -846,6 +873,72 @@ function renderRulesPage(focusNo) {
     if (Math.abs(dx) > 60) showPage(page + (dx < 0 ? 1 : -1));
   });
   rulesTurn = (d) => showPage(page + d); // ← → 키 (아래 keydown)
+
+  // ----- 형광펜 -----
+  const pop = highlightPop();
+  let pending = null; // { mode: 'add', key, start, end } | { mode: 'del', key, at }
+  const hidePop = () => {
+    pop.hidden = true;
+    pending = null;
+  };
+  const showPop = (rect, text, what) => {
+    pending = what;
+    pop.textContent = text;
+    pop.hidden = false;
+    const x = Math.min(Math.max(rect.left + rect.width / 2, 50), innerWidth - 50);
+    pop.style.left = `${Math.round(x + scrollX)}px`;
+    pop.style.top = `${Math.round(rect.bottom + scrollY + 8)}px`;
+  };
+  const lineOf = (node) => (node instanceof Element ? node : node?.parentElement)?.closest('li[data-line]');
+  const offsetIn = (li, node, off) => {
+    const r = document.createRange();
+    r.selectNodeContents(li);
+    r.setEnd(node, off);
+    return r.toString().length;
+  };
+  const textOf = (key) => {
+    const [no, i] = key.split('-').map(Number);
+    return RULEBOOK.find((r) => r.no === no)?.points[i]?.t ?? '';
+  };
+  rulesOnSelect = () => {
+    if (!list.isConnected) return;
+    const sel = getSelection();
+    if (!sel?.rangeCount || sel.isCollapsed) {
+      if (pending?.mode === 'add') hidePop();
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const li = lineOf(range.startContainer);
+    if (!li || li !== lineOf(range.endContainer) || !list.contains(li)) {
+      if (pending?.mode === 'add') hidePop();
+      return;
+    }
+    const start = offsetIn(li, range.startContainer, range.startOffset);
+    const end = offsetIn(li, range.endContainer, range.endOffset);
+    showPop(range.getBoundingClientRect(), '🖍️ 칠하기', { mode: 'add', key: li.dataset.line, start, end });
+  };
+  // 칠한 곳을 누르면 '지우기'
+  list.addEventListener('click', (e) => {
+    const mark = e.target instanceof Element ? e.target.closest('mark.hl') : null;
+    if (!mark) {
+      if (pending?.mode === 'del') hidePop();
+      return;
+    }
+    if (String(getSelection?.() ?? '')) return;
+    showPop(mark.getBoundingClientRect(), '🧽 지우기', { mode: 'del', key: mark.closest('li[data-line]').dataset.line, at: Number(mark.dataset.at) });
+  });
+  pop.onclick = () => {
+    if (!pending) return;
+    const { key } = pending;
+    const text = textOf(key);
+    marks = pending.mode === 'add' ? addHighlight(marks, key, text, pending.start, pending.end) : removeHighlight(marks, key, text, pending.at);
+    store.set(HIGHLIGHT_KEY, JSON.stringify(marks));
+    els.intro.querySelectorAll(`li[data-line="${key}"]`).forEach((li) => {
+      li.innerHTML = markedHtml(text, marks[key], escHtml);
+    });
+    getSelection()?.removeAllRanges();
+    hidePop();
+  };
   // 책장 가운데를 기준으로 오른쪽을 누르면 다음 쪽, 왼쪽을 누르면 이전 쪽 (링크 · 버튼 · 글자 고르기는 빼고)
   const hint = $('#page-hint');
   const sideOf = (e) => {
@@ -853,7 +946,7 @@ function renderRulesPage(focusNo) {
     return e.clientX - r.left < r.width / 2 ? -1 : 1;
   };
   const canTurn = (d) => !$('#rule-pager').hidden && (d < 0 ? page > 0 : page < pages.length - 1);
-  const onControl = (e) => e.target instanceof Element && e.target.closest('a, button, input, summary');
+  const onControl = (e) => e.target instanceof Element && e.target.closest('a, button, input, summary, details, mark.hl');
   sheet.addEventListener('click', (e) => {
     if (onControl(e) || String(getSelection?.() ?? '')) return;
     const d = sideOf(e);

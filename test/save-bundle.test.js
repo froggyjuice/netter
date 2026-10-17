@@ -19,5 +19,5 @@ test('빈 묶음 판별', () => {
   assert.ok(isEmptySave({}));
   assert.ok(isEmptySave({ 'netball.pass': '{}' }));
   assert.ok(!isEmptySave({ 'netball.pass': '{"first":3}' }));
-  assert.equal(SAVE_KEYS.length, 3);
+  assert.equal(SAVE_KEYS.length, 4);
 });

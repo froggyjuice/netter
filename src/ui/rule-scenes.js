@@ -615,7 +615,7 @@ function contact(ctx, g) {
 function sanctions(ctx, g) {
   ctx.fillStyle = '#f4efe1';
   ctx.fillRect(0, 0, W, H);
-  const steps = [['조언', '#ffffff'], ['패스 위치\n앞으로', '#ffffff'], ['경고', '#fff3c4'], ['일시 퇴장\n2분', '#ffd9b8'], ['퇴장', '#f6b8b8']];
+  const steps = [['말로 주의', '#ffffff'], ['패스 자리\n앞당기기', '#ffffff'], ['경고', '#fff3c4'], ['일시 퇴장\n2분', '#ffd9b8'], ['퇴장', '#f6b8b8']];
   steps.forEach(([t, bg], i) => {
     card(ctx, 30 + i * 136, 150, 118, 76, t, { bg, size: 15 });
     if (i < steps.length - 1) arrow(ctx, 30 + i * 136 + 120, 188, 30 + (i + 1) * 136 - 4, 188, { width: 2.5, head: 8 });
@@ -631,7 +631,7 @@ function dissent(ctx, g) {
   ghost(g, 290, 200, { R: 20, lx: 1, ly: 0 });
   bubble(ctx, '그게 왜 반칙이에요?!', 260, 110, { size: 15, tailX: 285, tailY: 170 });
   umpire(ctx, g, 470, 210, { fx: -1, fy: 0, R: 18, call: null });
-  bubble(ctx, '페널티 패스 앞으로!', 520, 120, { size: 15, tailX: 480, tailY: 180 });
+  bubble(ctx, '페널티 패스, 자리 앞당김!', 520, 120, { size: 15, tailX: 480, tailY: 180 });
   verdict(ctx, 370, 280, false, 20);
   label(ctx, '판정에 항의 = 불공정 플레이', W / 2, 330, { size: 14 });
 }
@@ -645,7 +645,7 @@ function together(ctx, g) {
   bump(ctx, 360, 200, 30);
   label(ctx, '동시에 잡았다!', 360, 120, { size: 16 });
   card(ctx, 230, 260, 260, 56, '바로 전에 공 가진 팀 공\n(포제션)', { size: 14, bg: '#fffdf6' });
-  label(ctx, '토스업은 없어요', W / 2, 40, { size: 15 });
+  label(ctx, '동시 반칙', W / 2, 40, { size: 15 });
 }
 
 /** Rule 21: 다른 수준의 경기 */

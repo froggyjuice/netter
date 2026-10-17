@@ -30,9 +30,9 @@ export const DAILY_RULES = Object.freeze([
   { rule: 16, scene: 'distOk', text: '공 가진 선수와 0.9m 이상 떨어졌다면 뛰어올라 막아도 돼요.' },
   { rule: 16, scene: 'distBad', text: '0.9m 안에서 팔을 뻗어 막으면 장애 반칙(Obstruction) → 페널티 패스예요.' },
   { rule: 17, scene: 'contact', text: '밀기 · 잡기 · 기대기처럼 상대 플레이를 방해하는 접촉 반칙(Contact)은 페널티 패스!' },
-  { rule: 18, scene: 'sanctions', text: '심판은 조언 → 패스 위치 앞으로 → 경고 → 일시 퇴장(2분) → 퇴장 순서로 조치해요.' },
-  { rule: 19, scene: 'dissent', text: '판정에 항의하면 불공정 플레이 → 앞으로 옮긴 페널티 패스예요.' },
-  { rule: 20, scene: 'together', text: '두 상대가 동시에 공을 잡으면, 바로 전에 공을 가졌던 팀 공이에요 (토스업 없음).' },
+  { rule: 18, scene: 'sanctions', text: '심판은 말로 주의 → 패스 자리 앞당기기 → 경고 → 일시 퇴장(2분) → 퇴장 순서로 조치해요.' },
+  { rule: 19, scene: 'dissent', text: '판정에 항의하면 불공정 플레이 → 페널티 패스를 주고 그 자리를 앞당겨요.' },
+  { rule: 20, scene: 'together', text: '두 팀 선수가 동시에 공을 잡으면, 바로 전에 공을 갖고 있던 팀에게 공을 줘요 (포제션).' },
   { rule: 21, scene: 'kids', text: '어린이 경기는 낮은 골대 · 작은 공처럼 바꿔서 할 수 있어요.' },
 ]);
 

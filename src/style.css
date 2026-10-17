@@ -806,3 +806,18 @@ a.rule-link:hover { color: var(--accent); text-decoration-style: solid; }
 .brag-list ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
 .brag-list li.new { font-weight: 700; }
 .new-tag { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 6px; background: #d96464; color: #fff; font-size: 0.7rem; }
+
+/* 넷볼 규칙 사전: 형광펜 · 근거 원문보기 */
+mark.hl { background: linear-gradient(transparent 35%, #fff07a 35%, #fff07a 92%, transparent 92%); color: inherit; padding: 0 1px; cursor: pointer; }
+.hl-pop {
+  position: absolute; z-index: 50; transform: translateX(-50%); padding: 6px 12px; border: 0; border-radius: 999px;
+  background: #3a3a36; color: #fff; font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+.hl-pop[hidden] { display: none; }
+.hl-tip { margin: 6px 0 0; }
+.rule-src { margin: 6px 0 0; font-size: 0.85rem; }
+.rule-src summary { cursor: pointer; color: #86602a; font-weight: 700; }
+.rule-src ol { margin: 6px 0; padding-left: 1.4em; display: grid; gap: 4px; }
+.rule-src q { font-style: italic; color: #5b5b55; }
+.rule-src q::before { content: '“'; }
+.rule-src q::after { content: '…”'; }

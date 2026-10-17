@@ -86,8 +86,8 @@ export async function renderMe(el, { hub, showToast, onSavesChanged, openLogin }
       </div>
       <p class="small" id="save-status">계정 기록 확인 중…</p>
       <div class="row">
-        <button type="button" class="btn small" id="save-up">⬆️ 이 기기 기록 → 계정</button>
-        <button type="button" class="btn small" id="save-down">⬇️ 계정 기록 → 이 기기</button>
+        <button type="button" class="btn small" id="save-up">⬆️ 기기 기록을 계정으로 업로드</button>
+        <button type="button" class="btn small" id="save-down">⬇️ 계정 기록을 이 기기로 다운로드</button>
       </div>
       <p class="muted small">옮기면 받는 쪽의 기록을 덮어써요.</p>
     </section>`;
