@@ -1,0 +1,12 @@
+node_modules
+dist
+.data
+.env
+.env.*
+!.env.example
+.vercel
+*.log
+# 규정집 PDF (저작권, 커밋 금지)
+*.pdf
+# 로컬 도구 설정 (Claude Code 미리보기 서버)
+.claude/

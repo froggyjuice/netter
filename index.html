@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="theme-color" content="#4a8559" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>넷볼 놀이터</title>
+    <meta name="description" content="넷볼 포지션별 이동 구역을 게임으로 익혀요. (비공식 학습용)" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- 홈 화면에 설치 (이름을 바꾸면 manifest.webmanifest 도 함께) -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="넷볼 놀이터" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a href="#/" class="brand" id="brand">🏐 넷볼 놀이터</a>
+      <span class="sub">비공식 학습용 · 2024 월드넷볼 규칙 기준</span>
+      <div class="topbar-actions">
+        <button class="btn small install" id="btn-install" type="button" hidden>📲 홈 화면에 설치</button>
+        <a class="btn small board-link" id="btn-board" href="#/board">🏆 랭킹·댓글</a>
+        <button class="btn small report" id="btn-report" type="button" title="오류나 아이디어를 알려주세요">💬 신고</button>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <nav class="tabs" id="tabs" aria-label="게임 선택"></nav>
+
+      <section class="card" id="intro"></section>
+
+      <section class="card stage" id="stage" hidden>
+        <div class="hud">
+          <span class="pill" id="hud-pos"></span>
+          <span class="pill clock" id="hud-clock" aria-label="경기 시간">1Q 15:00</span>
+          <span class="pill">점수 <b id="hud-score">0</b></span>
+          <span class="spacer" aria-hidden="true"></span>
+          <button class="btn ghost small icon" id="btn-fullscreen" type="button" title="전체 화면" aria-label="전체 화면" hidden>⛶</button>
+          <button class="btn ghost small icon" id="btn-pause" type="button" aria-pressed="false" title="일시정지 (Space)" aria-label="일시정지">⏸</button>
+          <button class="btn ghost small icon sound" id="btn-sfx" type="button" aria-pressed="true" title="효과음 켜기/끄기">🔊</button>
+          <button class="btn ghost small icon sound" id="btn-music" type="button" aria-pressed="true" title="배경음악 켜기/끄기">🎵</button>
+          <button class="btn ghost small" id="btn-quit" type="button">그만하기</button>
+        </div>
+        <p class="zone-note" id="hud-zone"></p>
+        <div class="stage-brief" id="stage-brief" aria-live="polite"></div>
+
+        <div class="play">
+        <div class="canvas-wrap" id="game-parent">
+          <div class="overlay pause" id="pause" hidden>
+            <h3>⏸ 일시정지</h3>
+            <p class="muted small">규칙을 다시 읽어 보세요.<br />노트북은 스페이스 키로도 계속할 수 있어요.</p>
+            <p class="small" id="pause-note">선택한 포지션의 구역 안에서만 움직여요.<br />벽은 튕기고, 다른 구역에 들어가면 <b>오프사이드 −10점</b>!</p>
+            <div class="pause-rules" id="pause-rules"></div>
+            <div class="row center">
+              <button class="btn primary" id="btn-resume" type="button">▶ 계속하기</button>
+              <button class="btn ghost" id="btn-pause-quit" type="button">그만하기</button>
+            </div>
+          </div>
+          <div class="overlay quarter" id="quarter" hidden>
+            <h3 id="q-title">1쿼터 끝!</h3>
+            <p class="reason" id="q-reason"></p>
+            <p class="big"><b id="q-score">0</b>점 <span class="muted small">(합계 <span id="q-total">0</span>점)</span></p>
+            <p class="small q-next" id="q-next"></p>
+            <p class="muted small" id="q-break"></p>
+            <div class="row center">
+              <button class="btn primary" id="btn-next-quarter" type="button">다음 쿼터 시작 ▶</button>
+            </div>
+            <button class="btn ghost small" id="btn-q-quit" type="button">그만하기</button>
+          </div>
+          <div class="overlay" id="over" hidden>
+            <h3>경기 종료</h3>
+            <p id="over-reason" class="reason"></p>
+            <p class="big"><b id="over-score">0</b>점</p>
+            <div class="review-tabs" role="group" aria-label="복습">
+              <button type="button" class="info-tab" aria-expanded="false" aria-controls="review-game">📊 경기 복습</button>
+              <button type="button" class="info-tab" aria-expanded="false" aria-controls="review-rules">📖 규칙 복습</button>
+              <button type="button" class="info-tab" aria-expanded="false" aria-controls="review-log">💬 알림 다시 보기</button>
+            </div>
+            <div class="info-panel review-panel" id="review-game" hidden><ul class="review-stats" id="review-stats"></ul></div>
+            <div class="info-panel review-panel" id="review-rules" hidden><ul class="review-rules" id="review-rules-list"></ul></div>
+            <div class="info-panel review-panel" id="review-log" hidden><ol class="review-log" id="review-log-list"></ol></div>
+            <ul class="over-badges" id="over-badges" aria-label="새로 얻은 배지 (누르면 설명)" hidden></ul>
+            <p class="over-badge-desc" id="over-badge-desc" aria-live="polite" hidden></p>
+            <form id="over-form" class="nick-form" autocomplete="off">
+              <label for="nick">닉네임으로 리더보드에 남기기</label>
+              <div class="row">
+                <input id="nick" maxlength="12" placeholder="닉네임 (12자 이내)" />
+                <button class="btn" id="btn-submit" type="submit">등록</button>
+              </div>
+            </form>
+            <p class="muted small" id="over-msg" aria-live="polite"></p>
+            <div class="row center">
+              <button class="btn primary" id="btn-again" type="button">같은 포지션으로 다시</button>
+              <button class="btn" id="btn-again-random" type="button">🎲 랜덤 포지션으로 다시</button>
+            </div>
+            <p class="muted small">다른 포지션으로 바로 시작</p>
+            <div class="over-picks" id="over-picks" role="group" aria-label="포지션 골라 바로 시작"></div>
+            <button class="btn ghost small" id="btn-home" type="button">🏠 홈으로</button>
+          </div>
+        </div>
+
+        <div class="dpad" id="dpad" aria-label="방향 버튼">
+          <button type="button" data-dir="up" aria-label="위">▲</button>
+          <button type="button" data-dir="left" aria-label="왼쪽">◀</button>
+          <button type="button" data-dir="down" aria-label="아래">▼</button>
+          <button type="button" data-dir="right" aria-label="오른쪽">▶</button>
+        </div>
+        <div class="ppad" id="ppad" aria-label="패스 퍼즐 버튼">
+          <button type="button" data-act="start">▶ 경기 시작</button>
+          <button type="button" data-act="shoot">🎯 슛</button>
+          <button type="button" data-act="retry">↺ 다시</button>
+          <button type="button" data-act="next" hidden>다음 스테이지 ▶</button>
+          <button type="button" data-act="quit" hidden>그만하기</button>
+        </div>
+        <div class="rpad" id="rpad" aria-label="슛·패스 버튼">
+          <button type="button" data-act="pass">🤝 패스 <small>↓</small></button>
+          <button type="button" data-act="shoot">🎯 슛 <small>↑</small></button>
+        </div>
+        </div>
+
+        <div class="toasts" id="toast" role="status" aria-live="polite"></div>
+
+        <div class="legend">
+          <span><i class="dot ball"></i> 공격: 공 +10 (골 서클의 GS·GA는 +30)</span>
+          <span><i class="dot roll"></i> 수비: 굴러오는 공 차단 +10 (수비 서클의 GK·GD는 +30)</span>
+          <span><i class="dot pass"></i> 패스: 3초 안에 동료에게 +20</span>
+          <span><i class="dot opp"></i> 맞수: 부딪히면 접촉 반칙 · 0.9m 안이면 맞수 반칙</span>
+          <span><i class="dot sub"></i> 교체 (포지션이 바뀜)</span>
+        </div>
+      </section>
+
+      <section class="card" id="board" hidden></section>
+      <section class="card" id="comments" hidden></section>
+
+      <dialog class="help-dialog" id="help-dialog" aria-labelledby="help-title">
+        <div class="help-head">
+          <h3 id="help-title">📖 존 스네이크 설명</h3>
+          <button class="btn ghost small" id="help-close" type="button" aria-label="닫기">✕</button>
+        </div>
+        <div id="help-body"></div>
+      </dialog>
+
+      <dialog class="report-dialog" id="report-dialog" aria-labelledby="report-title">
+        <form id="report-form">
+          <h3 id="report-title">💬 오류·아이디어 보내기</h3>
+          <div class="report-kind" role="radiogroup" aria-label="종류">
+            <label><input type="radio" name="kind" value="bug" checked /> 🐞 오류</label>
+            <label><input type="radio" name="kind" value="idea" /> 💡 아이디어</label>
+          </div>
+          <textarea id="report-message" maxlength="500" rows="5" placeholder="어떤 일이 있었는지, 또는 이런 게 있으면 좋겠다는 걸 적어 주세요"></textarea>
+          <p class="muted small"><span id="report-count">0</span>/500 · 이름·연락처는 적지 마세요. 화면 크기와 기기 종류는 함께 보내져요.</p>
+          <p class="small" id="report-msg" aria-live="polite"></p>
+          <div class="row">
+            <button class="btn ghost" id="report-cancel" type="button">닫기</button>
+            <button class="btn primary" id="report-send" type="submit">보내기</button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog class="install-help" id="install-help">
+        <h3>📲 홈 화면에 설치하기</h3>
+        <p>아이폰·아이패드(Safari): 아래쪽 <b>공유 버튼</b> <span aria-hidden="true">⎋</span> → <b>홈 화면에 추가</b></p>
+        <p>설치한 아이콘으로 열면 주소창 없이 화면을 넓게 쓸 수 있어요.</p>
+        <form method="dialog"><button class="btn primary">알겠어요</button></form>
+      </dialog>
+    </main>
+
+    <footer class="foot">
+      네터인 (netter) 을 위한 넷볼 규칙 학습용 비공식 게임입니다. 규칙은 World Netball「Rules of Netball」2024를 직접 풀어 구현했으며, 실제 경기에서는 최신 공식 규정을 확인하세요.
+      <p class="signature">made by 굴🐸</p>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

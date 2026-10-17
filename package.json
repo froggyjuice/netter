@@ -1,0 +1,22 @@
+{
+  "name": "netball-games",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "넷볼 동아리 규칙 학습용 미니게임 허브 (비공식)",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}

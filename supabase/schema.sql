@@ -1,0 +1,58 @@
+-- Supabase 대시보드 > SQL Editor 에 붙여넣어 한 번 실행하세요.
+
+create table if not exists public.scores (
+  id          bigint generated always as identity primary key,
+  game        text        not null check (game in ('snake', 'rhythm', 'pass')),
+  nickname    text        not null check (char_length(nickname) between 1 and 12),
+  score       int         not null check (score between 0 and 100000),
+  meta        jsonb,
+  user_id     uuid references auth.users (id) on delete set null, -- 2단계(로그인)에서 사용, 지금은 null
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists scores_game_score_idx on public.scores (game, score desc, created_at);
+
+-- RLS를 켜고 정책을 만들지 않으면 anon 키로는 읽기/쓰기가 모두 막힙니다.
+-- 이 앱은 서버 함수(api/score.js)가 service_role 키로만 접근하므로 이 상태가 의도입니다.
+alter table public.scores enable row level security;
+
+-- 오류·아이디어 신고 (api/report.js). 이름·연락처·IP는 저장하지 않는다.
+create table if not exists public.reports (
+  id          bigint generated always as identity primary key,
+  kind        text        not null check (kind in ('bug', 'idea')),
+  message     text        not null check (char_length(message) between 2 and 500),
+  meta        jsonb,      -- 화면 상황(페이지·포지션·화면 크기·기기 종류)
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists reports_created_idx on public.reports (created_at desc);
+
+-- scores 와 같이 RLS만 켜고 정책은 만들지 않는다 → 서버 함수(service_role)만 접근
+alter table public.reports enable row level security;
+
+-- 댓글 (api/comments.js). 로그인 없이 닉네임으로 쓴다.
+-- delete_hash: 쓴 기기에 저장된 삭제 토큰의 SHA-256 (토큰 원문은 저장하지 않음)
+-- hidden: 관리자가 Table Editor 에서 체크하면 목록에서 숨겨진다
+create table if not exists public.comments (
+  id           bigint generated always as identity primary key,
+  nickname     text        not null check (char_length(nickname) between 1 and 12),
+  message      text        not null check (char_length(message) between 1 and 300),
+  delete_hash  text        not null,
+  hidden       boolean     not null default false,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists comments_visible_idx on public.comments (hidden, id desc);
+
+alter table public.comments enable row level security;
+
+-- 개발 중인 게임 좋아요 (api/likes.js) — 개발 우선순위를 정하는 데 쓴다.
+-- voter_hash: 기기(브라우저)에 저장된 무작위 토큰의 SHA-256 (토큰 원문 · IP는 저장하지 않음). 기기마다 게임당 한 번.
+create table if not exists public.likes (
+  game        text        not null check (game in ('whistle', 'throwin', 'steps')),
+  voter_hash  text        not null,
+  created_at  timestamptz not null default now(),
+  primary key (game, voter_hash)
+);
+
+alter table public.likes enable row level security;

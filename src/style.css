@@ -1,0 +1,689 @@
+/* 눈의 피로를 줄이려고 색(색상)은 그대로 두고 채도·대비를 낮춘 파스텔 톤 (게임 캔버스는 shared/theme.js) */
+:root {
+  --bg: #e9f1e7;
+  --card: #fcfdfa;
+  --ink: #3a3a36;
+  --muted: #8d8879;
+  --line: #d7e5d5;
+  --tab: #e6efe3;
+  --tab-on: #cde1c8;
+  --accent: #4a8559;
+  --accent-ink: #ffffff;
+  --ball: #eda15e;
+  --bad: #c25b5b;
+  --good: #4a8559;
+  --attack: #3f7a4c; /* 공격 포지션 */
+  --attack-ink: #ffffff;
+  --defence: #cfe8c8; /* 수비 포지션 */
+  --defence-ink: #2f5233;
+  --centre: #f3d77e; /* 센터 */
+  --centre-ink: #4a3f10;
+  --radius: 18px;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  line-height: 1.6;
+  background-color: var(--bg);
+  /* 코트 바닥의 흰 라인 느낌 */
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.6) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.6) 2px, transparent 2px);
+  background-size: 120px 120px;
+  background-position: -1px -1px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+  background: var(--accent);
+}
+.topbar-actions { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.topbar { flex-wrap: wrap; row-gap: 8px; } /* 좁은 화면에 버튼이 많으면(설치 버튼 등) 다음 줄로 */
+.topbar .install, .topbar .report { background: #fff; color: var(--accent); }
+
+/* 오류·아이디어 신고 창 */
+.report-dialog { width: min(440px, calc(100% - 32px)); border: 0; border-radius: var(--radius); padding: 20px; }
+.report-dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
+.report-dialog h3 { margin: 0 0 10px; }
+.report-kind { display: flex; gap: 16px; margin-bottom: 8px; font-weight: 700; }
+.report-kind label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.report-dialog textarea {
+  width: 100%; font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--line); resize: vertical;
+}
+.report-dialog p { margin: 6px 0; }
+.report-dialog .row { justify-content: flex-end; margin-top: 8px; }
+
+/* 아이폰 설치 안내 */
+.install-help { max-width: min(420px, calc(100% - 32px)); border: 0; border-radius: var(--radius); padding: 20px; }
+.install-help::backdrop { background: rgba(0, 0, 0, 0.4); }
+.install-help h3 { margin: 0 0 10px; }
+.install-help p { margin: 0 0 8px; }
+.install-help form { text-align: right; margin-top: 12px; }
+.brand { color: #fff; font-weight: 800; font-size: 1.1rem; text-decoration: none; }
+.topbar .sub { color: rgba(255, 255, 255, 0.85); font-size: 0.82rem; }
+
+.wrap { max-width: 920px; margin: 0 auto; padding: 18px 16px 8px; }
+
+/* 탭 */
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 16px; border-radius: 12px;
+  background: var(--tab); color: #2f5a2f; font-weight: 700; text-decoration: none;
+  transition: background 0.15s;
+}
+.tab small { font-weight: 600; font-size: 0.7rem; color: var(--muted); }
+.tab[aria-current='page'] small { color: rgba(255, 255, 255, 0.85); }
+.tab:hover { background: #d2ead2; }
+.tab[aria-current='page'] { background: var(--accent); color: #fff; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.06); }
+
+/* 카드 */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+}
+.card[hidden], .overlay[hidden], [hidden] { display: none !important; }
+.card h2 { margin: 0 0 10px; font-size: 1.25rem; }
+.desc { margin: 0 0 8px; }
+.controls { margin: 0 0 14px; color: var(--muted); font-size: 0.9rem; }
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+
+/* 포지션 선택 */
+.picker { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 18px; align-items: start; margin-bottom: 18px; }
+.chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.chip {
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  padding: 8px 6px; border-radius: 12px; border: 2px solid transparent;
+  background: var(--tab); color: #2f5a2f; cursor: pointer; font: inherit;
+}
+.chip b { font-size: 1.05rem; }
+.chip span { font-size: 0.75rem; }
+/* 포지션 이름은 코드 옆 같은 줄에: 코드는 크게, 이름은 작게 */
+.chip .chip-title { display: flex; align-items: baseline; justify-content: center; gap: 5px; flex-wrap: wrap; }
+.chip .chip-title b { font-size: 1.15rem; }
+.chip .chip-title span { font-size: 0.75rem; }
+.chip[aria-pressed='true'] { border-color: var(--accent); background: var(--tab-on); color: var(--ink); }
+/* 포지션 칩: 첫 줄 [랜덤 | C], 그 아래 왼쪽 공격 · 오른쪽 수비, 같은 줄이 서로 맞서는 짝 (GS-GK, GA-GD, WA-WD) */
+.chips.positions { grid-template-columns: 1fr 1fr; }
+.chip small { font-size: 0.7rem; line-height: 1.3; opacity: 0.9; text-align: center; }
+/* 랜덤: 점선 테두리의 흰 칩 */
+.chip.random { background: var(--card); border: 2px dashed var(--line); color: var(--ink); }
+.chip.random[aria-pressed='true'] { border-style: solid; border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.preview-random {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  aspect-ratio: 2 / 1; border-radius: 12px; border: 2px dashed var(--line); background: var(--tab);
+  font-size: 2.6rem; text-align: center; padding: 12px;
+}
+.preview-random span { font-size: 0.9rem; color: var(--muted); }
+body[data-orient='portrait'] .preview-random { aspect-ratio: 4 / 3; }
+/* 시작 줄: [센터 모드 선택(C·랜덤일 때)] [시작 ▶] — 좁으면 선택이 윗줄로 */
+.start-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-end; gap: 10px 12px; margin-top: 12px; }
+.start-row .mode-pick { margin-top: 0; }
+.start-row .mode-pick > p { text-align: right; }
+.start-row .mode-pick .chip { padding: 8px 10px; }
+.start-row .btn { min-width: 140px; }
+/* 포지션 색: 공격 진한 초록 · 수비 연한 초록 · 센터 노랑 */
+.chip[data-group], .pill[data-group], .pick[data-group] { background: var(--pos-bg); color: var(--pos-ink); }
+[data-group='attack'] { --pos-bg: var(--attack); --pos-ink: var(--attack-ink); }
+[data-group='defence'] { --pos-bg: var(--defence); --pos-ink: var(--defence-ink); }
+[data-group='centre'] { --pos-bg: var(--centre); --pos-ink: var(--centre-ink); }
+.chip[data-group][aria-pressed='true'] {
+  background: var(--pos-bg); color: var(--pos-ink);
+  border-color: var(--card); box-shadow: 0 0 0 3px var(--ink);
+}
+.mode-pick { margin-top: 12px; }
+.mode-pick[hidden] { display: none; }
+.mode-pick > p { margin: 0 0 6px; font-size: 0.84rem; color: var(--muted); }
+.mode-pick .chips { grid-template-columns: repeat(3, 1fr); }
+.preview { margin: 0; }
+.preview canvas { width: 100%; height: auto; border-radius: 12px; display: block; }
+.preview figcaption { margin-top: 6px; font-size: 0.84rem; color: var(--muted); }
+
+/* 버튼 */
+.btn {
+  font: inherit; font-weight: 700; cursor: pointer;
+  padding: 10px 18px; border-radius: 12px; border: 0;
+  background: var(--tab-on); color: var(--ink);
+}
+.btn:hover { filter: brightness(0.96); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); padding: 12px 28px; }
+.btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.btn.small { padding: 6px 12px; font-size: 0.85rem; }
+:focus-visible { outline: 3px solid #5b8fd0; outline-offset: 2px; }
+
+/* 게임 화면 */
+.stage { scroll-margin-top: 8px; }
+.hud { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; }
+.hud .spacer { flex: 1; } /* 버튼들(전체 화면·일시정지·소리·그만하기)은 오른쪽 끝에 모은다 */
+.btn.icon { padding: 6px 9px; }
+.btn.icon.sound[aria-pressed='false'] { opacity: 0.4; filter: grayscale(1); } /* 소리 꺼짐 */
+.pill { padding: 5px 12px; border-radius: 999px; background: var(--tab); font-weight: 700; }
+.pill b { font-variant-numeric: tabular-nums; }
+.hearts { color: var(--bad); letter-spacing: 2px; }
+.zone-note { margin: 0 0 8px; font-size: 0.85rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.canvas-wrap {
+  position: relative; width: 100%; aspect-ratio: 2 / 1; margin: 0 auto; /* 너비는 main.js fitCourt()가 창 크기에 맞춘다 */
+  border-radius: 14px; overflow: hidden; background: #c3c7c3;
+}
+/* 스와이프는 캔버스에서만 막는다 (위에 뜨는 일시정지·종료 화면은 터치로 스크롤할 수 있어야 함) */
+.canvas-wrap canvas { display: block; touch-action: none; user-select: none; -webkit-user-select: none; }
+
+.overlay {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px;
+  padding: 12px; text-align: center; overflow: auto;
+  background: rgba(251, 254, 249, 0.95);
+}
+/* 내용이 짧으면 가운데, 길면(복습 펼침 등) 위에서부터 스크롤 — justify-content:center 는 넘칠 때 위쪽이 잘린다 */
+.overlay > :first-child { margin-top: auto; }
+.overlay > :last-child { margin-bottom: auto; }
+.overlay h3 { margin: 0; font-size: 1.2rem; }
+.overlay p { margin: 0; }
+.overlay .reason { color: var(--muted); }
+.overlay .big { font-size: 1.7rem; margin: 2px 0; }
+.nick-form { width: min(380px, 100%); margin: 6px 0 2px; }
+.nick-form label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
+.row { display: flex; gap: 8px; }
+.row.center { justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+.nick-form input {
+  flex: 1; min-width: 0; font: inherit; padding: 9px 12px; border-radius: 10px;
+  border: 1px solid #b5d3b5; background: #fff;
+}
+
+/* 알림: 최대 3개까지 쌓인다. 자리는 미리 잡아 둬서 코트 크기가 흔들리지 않는다 */
+.toasts { min-height: calc(3 * 1.45em); margin: 8px 0 0; font-size: 0.92rem; line-height: 1.45; }
+.toast-item { margin: 0; font-weight: 700; color: var(--ink); animation: toast-in 0.2s ease-out; transition: opacity 0.3s; }
+.toast-item.hide { opacity: 0; }
+.toast-item[data-kind='bad'] { color: var(--bad); }
+.toast-item[data-kind='good'] { color: var(--good); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(4px); } }
+
+
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; font-size: 0.82rem; color: var(--muted); }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 4px; }
+.dot.ball { background: var(--ball); }
+.dot.sub { background: #5fae9f; border-radius: 4px; }
+.dot.pass { background: #6b9be0; }
+.dot.opp { background: #8b6fc4; border-radius: 3px; }
+.dot.roll { background: var(--ball); box-shadow: 5px 0 0 -2px var(--ball), 9px 0 0 -4px var(--ball); margin-right: 10px; }
+
+/* 모바일 방향 버튼: 터치 기기에서만 보인다 */
+.dpad { display: none; }
+@media (hover: none), (pointer: coarse) {
+  .dpad {
+    display: grid; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(2, 56px);
+    gap: 8px; justify-content: center; margin-top: 12px;
+  }
+  .dpad button {
+    font-size: 1.3rem; border: 0; border-radius: 14px; background: var(--tab-on); color: var(--ink);
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  .dpad button:active { background: var(--ball); }
+  .dpad [data-dir='up'] { grid-column: 2; grid-row: 1; }
+  .dpad [data-dir='left'] { grid-column: 1; grid-row: 2; }
+  .dpad [data-dir='down'] { grid-column: 2; grid-row: 2; }
+  .dpad [data-dir='right'] { grid-column: 3; grid-row: 2; }
+}
+
+/* 리더보드 */
+.rank { list-style: none; margin: 0; padding: 0; }
+.rank li {
+  display: grid; grid-template-columns: 2.4em 1fr auto 3.6em; gap: 8px; align-items: center;
+  padding: 8px 4px; border-bottom: 1px dashed var(--line);
+}
+.rank li:last-child { border-bottom: 0; }
+.rank .no { font-weight: 800; text-align: center; }
+.rank .nick { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank .pts { font-variant-numeric: tabular-nums; font-weight: 800; }
+.rank .date { color: var(--muted); font-size: 0.8rem; text-align: right; }
+.rank li.me { background: #e3f3e3; border-radius: 10px; }
+
+.foot { max-width: 920px; margin: 0 auto; padding: 8px 16px 28px; color: var(--muted); font-size: 0.78rem; }
+
+@media (max-width: 720px) {
+  .card { padding: 16px; }
+  .picker { grid-template-columns: 1fr; }
+  .topbar .sub { display: none; }
+}
+
+/* 폰 세로 모드: 코트를 세로(1:2)로 세우고 화면 높이에 맞춘다. 방향 버튼은 조금 작게 */
+body[data-orient='portrait'] .canvas-wrap { aspect-ratio: 1 / 2; }
+body[data-orient='portrait'] .dpad { grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(2, 44px); gap: 6px; margin-top: 8px; }
+body[data-orient='portrait'] .preview canvas { width: auto; max-width: 100%; max-height: 360px; margin: 0 auto; }
+
+/* 폰 가로 모드: 코트가 화면 높이 안에 들어오도록 줄이고, 방향 버튼은 오른쪽에 둔다 */
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
+  .topbar, .foot, .zone-note, .legend { display: none; }
+  .wrap { padding-top: 8px; }
+  .wrap:has(#stage:not([hidden])) .tabs { display: none; }
+  .card { padding: 10px 14px; margin-bottom: 10px; }
+  .hud { margin-bottom: 6px; }
+  .play { display: flex; align-items: center; gap: 12px; }
+  .canvas-wrap { flex: 0 1 auto; }
+  .dpad { margin-top: 0; flex: 1 0 auto; }
+  .toasts { margin-top: 4px; }
+  .overlay { gap: 2px; padding: 6px; }
+  .overlay .big { font-size: 1.3rem; margin: 0; }
+  .overlay h3 { font-size: 1rem; }
+  .row.center { margin-top: 4px; }
+  .nick-form { margin: 2px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* 배지 */
+.badges { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); }
+.badges h3 { margin: 0 0 10px; font-size: 1rem; }
+.badges h3 small { color: var(--muted); font-weight: 400; margin-left: 4px; }
+.badges ul { list-style: none; margin: 0 0 6px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.badge { border-radius: 12px; background: var(--tab); align-self: start; }
+/* 모든 배지 같은 크기: [아이콘 | 이름 / 진행] 두 줄, 이름이 길면 말줄임 */
+.badge button {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'icon name name' 'icon meta info';
+  align-items: center; column-gap: 6px; row-gap: 3px; width: 100%; height: 56px; padding: 8px 9px;
+  font: inherit; color: inherit; text-align: left; background: none; border: 0; border-radius: 12px; cursor: pointer;
+}
+.badge button::after { content: 'ⓘ'; grid-area: info; font-size: 0.8rem; opacity: 0.6; }
+.badge button[aria-expanded='true']::after { content: '▴'; }
+.badge .icon { grid-area: icon; font-size: 1.3rem; }
+.badge .name { grid-area: name; font-size: 0.84rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.badge .meta { grid-area: meta; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.badge .count { flex: none; font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.badge[data-got='true'] .count { color: var(--centre-ink); font-weight: 700; }
+.badge small { display: block; padding: 0 10px 8px; font-size: 0.75rem; color: var(--muted); line-height: 1.4; }
+.badge small[hidden] { display: none; }
+.badge[data-got='false'] button { opacity: 0.55; } /* 설명은 흐리지 않고 읽기 쉽게 */
+.badge[data-got='true'] { background: var(--centre); color: var(--centre-ink); }
+.badge[data-got='true'] small { color: var(--centre-ink); }
+.over-badges { list-style: none; margin: 4px 0 8px; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.over-badges[hidden] { display: none; }
+.over-badges button {
+  font: inherit; font-weight: 700; font-size: 0.85rem; cursor: pointer;
+  padding: 4px 12px; border-radius: 999px; border: 2px solid transparent;
+  background: var(--centre); color: var(--centre-ink);
+}
+.over-badges button::after { content: ' ⓘ'; font-weight: 400; }
+.over-badges button[aria-expanded='true'] { border-color: var(--centre-ink); }
+.over-badge-desc { margin: 0 0 8px; padding: 6px 12px; border-radius: 10px; background: #fff6cc; color: var(--centre-ink); font-size: 0.88rem; }
+.over-badge-desc[hidden] { display: none; }
+
+/* 규칙 설명 토글 블록 */
+.info-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px; }
+.info-tab {
+  font: inherit; font-weight: 700; cursor: pointer;
+  padding: 8px 14px; border-radius: 12px; border: 2px dashed #a9cfa9; /* 누를 수 있는 설명 버튼임을 알 수 있게 연한 점선 */
+  background: var(--tab); color: #2f5a2f;
+}
+.info-tab::after { content: ' ▾'; font-size: 0.8em; }
+.info-tab[aria-expanded='true'] { background: var(--tab-on); border-color: var(--accent); border-style: solid; color: var(--ink); }
+.info-tab[aria-expanded='true']::after { content: ' ▴'; }
+.info-panel { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--tab); }
+.info-panel[hidden] { display: none; }
+.info-panel p { margin: 0 0 6px; }
+.info-panel p:last-child { margin-bottom: 0; }
+
+/* 일시정지 화면: 규칙 블록을 왼쪽 정렬로 읽기 좋게 */
+.overlay.pause { justify-content: flex-start; padding-top: 16px; }
+.pause-rules { width: min(560px, 100%); text-align: left; }
+.pause-rules .info-tabs { justify-content: center; }
+
+/* ---------- 폰(터치 기기): 게임 중 집중 모드 ----------
+   게임 화면이 열려 있으면 코트·방향 버튼·한 줄 HUD만 남기고 나머지는 숨긴다. */
+@media (hover: none), (pointer: coarse) {
+  body:has(#stage:not([hidden])) :is(.topbar, .tabs, #board, .foot, .legend, .zone-note) { display: none; }
+  body:has(#stage:not([hidden])) .wrap { padding-top: max(8px, env(safe-area-inset-top)); }
+  .stage { padding: 10px 12px; }
+  .hud { flex-wrap: nowrap; gap: 6px; }
+  .hud .pill { flex: none; padding: 4px 9px; font-size: 0.85rem; white-space: nowrap; }
+  .hud .pill .long { display: none; }
+  .hud .hearts { letter-spacing: 0; }
+  .hud .btn.icon { flex: none; padding: 5px 8px; }
+  #btn-quit { display: none; } /* 폰에서는 일시정지 화면의 '그만하기'를 쓴다 */
+
+  /* 일시정지·종료 화면은 코트 위가 아니라 화면 전체를 덮는다 (작은 코트 안에서 스크롤하지 않게) */
+  .overlay {
+    position: fixed; inset: 0; z-index: 50;
+    justify-content: flex-start; gap: 6px;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+      max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    background: var(--card); overscroll-behavior: contain;
+  }
+  /* 내용이 짧으면 가운데, 길면 위에서부터 스크롤 (넘칠 때 위가 잘리지 않는 가운데 정렬) */
+  .overlay .row.center { flex-wrap: wrap; justify-content: center; }
+  .overlay.pause { padding-top: max(16px, env(safe-area-inset-top)); }
+}
+/* 배지 진행 막대 (아직 못 얻은 배지) */
+.badge .bar { flex: 1; min-width: 0; height: 4px; border-radius: 2px; background: rgba(0, 0, 0, 0.08); overflow: hidden; }
+.badge .bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+
+/* 폰: 안내 줄은 두 줄까지 자리를 잡아 둔다 (코트 크기 계산에 쓰임) */
+@media (hover: none), (pointer: coarse) {
+  .toasts { font-size: 0.8rem; line-height: 1.35; min-height: calc(3 * 1.35em); }
+}
+
+/* 설명 글 옆 캐릭터 아이콘 (파란 동료 · 맞수) */
+.char-icon { display: inline-block; width: 1.25em; height: 1.1em; vertical-align: -0.2em; margin: 0 2px 0 1px; }
+
+/* 개발자 서명 */
+.foot .signature { margin: 8px 0 0; text-align: right; font-size: 0.8rem; color: var(--muted); }
+/* 설명 글 속 공 아이콘은 글자 높이에 맞춘 원형 */
+.char-icon.ball-icon { width: 1em; height: 1em; vertical-align: -0.15em; }
+.char-icon.roll-icon { width: 1.4em; height: 1em; vertical-align: -0.15em; }
+
+/* 종료 화면: 포지션 골라 바로 시작 */
+.over-picks { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 2px 0 6px; }
+.over-picks .pick {
+  min-width: 44px; padding: 6px 10px; border: 2px solid transparent; border-radius: 10px;
+  font: inherit; font-weight: 800; cursor: pointer;
+}
+.over-picks .pick:hover, .over-picks .pick:focus-visible { border-color: var(--ink); }
+
+/* 홈: 제목 + 설명 보기 버튼 */
+.intro-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.intro-head h2 { margin: 0; }
+.help-btn { background: var(--tab); color: #2f5a2f; }
+/* 포지션 칩의 공격/수비 표시는 아이콘만 */
+.chips.positions .chip small { font-size: 0.95rem; line-height: 1.2; }
+
+/* 설명 보기 창 */
+.help-dialog { width: min(640px, calc(100% - 24px)); max-height: calc(100dvh - 32px); border: 0; border-radius: var(--radius); padding: 18px 20px; }
+.help-dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
+.help-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.help-head h3 { margin: 0; }
+.help-pos { margin: 0 0 6px; padding: 8px 12px; border-radius: 10px; background: var(--tab); font-size: 0.9rem; }
+
+
+/* ---------- 랭킹·댓글 페이지 ---------- */
+.topbar .board-link { background: #fff; color: var(--accent); text-decoration: none; }
+.topbar .board-link[aria-current='page'] { background: var(--centre); color: var(--centre-ink); }
+.rank-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.rank-tabs button {
+  font: inherit; font-weight: 700; cursor: pointer; padding: 6px 12px;
+  border-radius: 999px; border: 2px solid transparent; background: var(--tab); color: #2f5a2f;
+}
+.rank-tabs button[aria-selected='true'] { background: var(--tab-on); border-color: var(--accent); color: var(--ink); }
+.rank-tabs button[disabled] { opacity: 0.5; cursor: default; }
+.rank-tabs small { font-weight: 400; color: var(--muted); }
+.comment-form { display: grid; gap: 8px; margin-bottom: 12px; }
+.comment-form input, .comment-form textarea {
+  font: inherit; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: #fff; width: 100%;
+}
+.comment-form input { max-width: 220px; }
+.comment-form textarea { resize: vertical; }
+.comment-form-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.comment-form p { margin: 0; }
+.comment-list { list-style: none; margin: 0; padding: 0; }
+.comment { padding: 10px 2px; border-bottom: 1px dashed var(--line); }
+.comment:last-child { border-bottom: 0; }
+.comment-head { display: flex; align-items: center; gap: 8px; }
+.comment-head .nick { font-size: 0.92rem; }
+.comment-del { margin-left: auto; padding: 2px 10px; font-size: 0.78rem; }
+.comment .text { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.center { text-align: center; margin-top: 8px; }
+
+/* 게임 화면 단순하게: 범례·구역 설명은 일시정지 화면 규칙 카드로, 그만하기는 일시정지 화면에 */
+.stage .legend, .stage .zone-note, #btn-quit { display: none !important; }
+
+/* 경기 후 복습 토글 */
+.review-tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.review-panel { width: min(520px, 100%); text-align: left; margin: 0 0 6px; }
+.review-stats { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.review-stats li { display: grid; grid-template-columns: 1.6em 1fr auto; gap: 6px; align-items: center; font-size: 0.88rem; }
+.review-stats .v { font-variant-numeric: tabular-nums; }
+.review-panel .info-tabs { justify-content: center; }
+
+/* 경기 시계 · 쿼터 사이 화면 */
+.hud .clock { font-variant-numeric: tabular-nums; background: #1f2d1f; color: #fff; }
+.overlay.quarter .q-next { max-width: 460px; }
+
+/* 경기 후: 겪은 규칙 · 알림 다시 보기 */
+.review-rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 240px; overflow-y: auto; }
+.review-rules .h { display: flex; align-items: baseline; gap: 6px; }
+.review-rules .r { font-size: 0.75rem; color: var(--muted); }
+.review-rules .n { margin-left: auto; font-weight: 800; color: var(--accent); }
+.review-rules p { margin: 2px 0 0; font-size: 0.85rem; }
+.review-log { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; display: grid; gap: 4px; font-size: 0.84rem; }
+.review-log li { display: grid; grid-template-columns: auto 1fr; gap: 8px; }
+.review-log .c { color: var(--muted); font-variant-numeric: tabular-nums; }
+.review-log li[data-kind='bad'] .x { color: var(--bad); }
+.review-log li[data-kind='good'] .x { color: var(--good); }
+
+/* ---------- 리듬 슈팅 ---------- */
+/* 골 서드 화면 (15.25m × 10.17m) — 가로·세로 화면 모두 같은 비율 */
+body[data-game='rhythm'] .canvas-wrap,
+body[data-game='rhythm'][data-orient='portrait'] .canvas-wrap { aspect-ratio: 1525 / 1017; }
+body[data-game='rhythm'] .dpad { display: none; }
+/* 슛·패스 버튼: 리듬 슈팅에서만, 모든 기기에서 보인다 (노트북은 ↑·↓ 키로도) */
+.rpad { display: none; }
+body[data-game='rhythm'] .rpad {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px auto 0; max-width: 520px;
+}
+.rpad button {
+  font: inherit; font-size: 1.15rem; font-weight: 800; padding: 14px 10px; border: 0; border-radius: 14px; cursor: pointer;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+.rpad [data-act='pass'] { background: #e3ecfa; color: #4a6fb5; }
+.rpad [data-act='shoot'] { background: var(--ball); color: #fff; }
+.rpad button:active { transform: scale(0.97); filter: brightness(0.92); }
+.rpad small { font-size: 0.75rem; opacity: 0.7; }
+@media (hover: none), (pointer: coarse) {
+  .rpad small { display: none; }
+}
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
+  body[data-game='rhythm'] .rpad { grid-template-columns: 1fr; margin: 0; flex: 1 0 140px; }
+  body[data-game='rhythm'] .rpad button { padding: 22px 10px; }
+}
+/* 잠긴 포지션 칩 (슛할 수 없는 포지션) */
+.chip.locked { opacity: 0.45; filter: grayscale(0.6); }
+.lock-note { margin: 8px 0 0; font-size: 0.85rem; color: var(--muted); }
+.lock-note[data-warn='true'] { color: var(--bad); font-weight: 700; }
+.rhythm-how { margin: 6px 0 0; }
+/* 폰 세로: 코트는 너비에 맞춰 작아지므로 아래 남는 자리에 슛·패스 버튼을 크게 (엄지로 누르기 쉽게) */
+body[data-game='rhythm'][data-orient='portrait'] .rpad { margin-top: 14px; }
+body[data-game='rhythm'][data-orient='portrait'] .rpad button { padding: 34px 10px; font-size: 1.35rem; }
+/* 리듬 슈팅 설명: 공격 모드 · 수비 모드 구역 */
+.help-mode { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--tab); }
+.help-mode h4 { margin: 0 0 4px; font-size: 1rem; }
+.help-mode .controls { margin: 6px 0 0; }
+
+/* 홈: 맛보기 · 타이밍 연습 */
+.try-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 0; }
+.try-btn { background: #fff; color: var(--accent); border: 2px dashed #a9cfa9; }
+.try-btn[aria-pressed='true'] { background: var(--tab-on); border-style: solid; border-color: var(--accent); }
+.try-btn:disabled { opacity: 0.5; cursor: default; }
+.try-msg[data-kind='bad'] { color: var(--bad); font-weight: 700; }
+.try-msg[data-kind='good'] { color: var(--good); font-weight: 700; }
+.practice { margin: 8px 0 0; padding: 10px; border-radius: 12px; background: var(--tab); }
+.practice-canvas { display: block; width: 100%; max-width: 420px; margin: 0 auto; border-radius: 10px; touch-action: manipulation; }
+.practice-pad { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; margin: 8px auto 0; max-width: 420px; }
+.practice-pad button {
+  font: inherit; font-size: 1.05rem; font-weight: 800; padding: 12px 10px; border: 0; border-radius: 14px; cursor: pointer;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+.practice-pad [data-act='down'] { background: #e3ecfa; color: #4a6fb5; }
+.practice-pad [data-act='up'] { background: var(--ball); color: #fff; }
+.practice-pad button:active { transform: scale(0.97); filter: brightness(0.92); }
+.practice-pad small { font-size: 0.75rem; opacity: 0.7; }
+.practice-msg { margin: 6px 0 0; font-size: 0.88rem; font-weight: 700; text-align: center; min-height: 2.6em; }
+.practice-msg[data-kind='bad'] { color: var(--bad); }
+.practice-msg[data-kind='good'] { color: var(--good); }
+.practice-stats { margin: 2px 0 0; text-align: center; }
+/* 리듬 슈팅: 잠긴 포지션을 눌러 구역을 보는 중 */
+.chip.locked[data-peek] { opacity: 0.8; outline: 2px dashed var(--bad); outline-offset: 1px; }
+
+/* ---------- 패스 퍼즐 ---------- */
+.pass-total { margin: 0 0 8px; font-weight: 800; }
+.stage-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 0 0 8px; }
+.stage-card {
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; column-gap: 8px; align-items: center; text-align: left;
+  font: inherit; padding: 10px 12px; border-radius: 14px; border: 2px dashed #a9cfa9; background: #fff; cursor: pointer; color: var(--ink);
+}
+.stage-card .no { grid-row: 1 / 4; font-size: 1.4rem; font-weight: 900; color: var(--accent); }
+.stage-card b { font-size: 0.95rem; }
+.stage-card .stars { font-size: 0.85rem; letter-spacing: 1px; }
+.stage-card small { color: var(--muted); font-size: 0.75rem; }
+.stage-card[data-cleared='true'] { border-style: solid; border-color: var(--accent); background: #f3fbf3; }
+.stage-card:disabled { opacity: 0.45; cursor: default; }
+.stage-card:not(:disabled):hover { background: var(--tab); }
+.ppad { display: none; }
+body[data-game='pass'] .dpad { display: none; }
+body[data-game='pass'] .ppad { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 10px auto 0; }
+.ppad button {
+  font: inherit; font-weight: 800; padding: 12px 18px; border: 0; border-radius: 14px; cursor: pointer; background: var(--tab-on); color: var(--ink);
+  touch-action: manipulation;
+}
+.ppad [data-act='shoot'] { background: var(--ball); color: #fff; }
+.ppad [data-act='start'], .ppad [data-act='next'] { background: var(--accent); color: #fff; }
+.ppad button[hidden] { display: none; }
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
+  body[data-game='pass'] .ppad { flex-direction: column; margin: 0; flex: 0 0 auto; }
+}
+
+/* 패스 퍼즐: 스테이지 설명 (코트 위에 계속 보임) */
+.stage-brief { display: none; }
+body[data-game='pass'] .stage-brief {
+  display: block; margin: 0 0 8px; padding: 8px 12px; border-radius: 12px; background: var(--tab); font-size: 0.88rem; line-height: 1.4;
+}
+.stage-brief p { margin: 0; }
+.stage-brief .hint { color: var(--muted); }
+@media (hover: none), (pointer: coarse) {
+  body[data-game='pass'] .stage-brief { font-size: 0.78rem; padding: 6px 10px; margin-bottom: 6px; }
+}
+
+/* 패스 퍼즐 챕터 */
+.chapter { margin: 0 0 12px; }
+.chapter h3 { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin: 0 0 6px; font-size: 1rem; }
+.chapter h3 small { color: var(--muted); font-weight: 600; font-size: 0.78rem; }
+.chapter .ch-no { padding: 2px 8px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 0.75rem; }
+.chapter .ch-stars { margin-left: auto; font-size: 0.82rem; color: var(--muted); }
+.ppad [data-act='quit'] { background: #fff; color: var(--muted); border: 2px solid var(--line); }
+
+/* 리듬 슈팅 최고 기록 줄 */
+.best-line { margin: 6px 0 0; font-size: 0.86rem; line-height: 1.5; }
+
+/* 개발 중인 게임 소개 */
+.dev-badge { display: inline-block; margin: 0 0 10px; padding: 6px 12px; border-radius: 999px; background: #fff4d6; color: #7a4b00; font-weight: 800; }
+.dev-plan { margin: 10px 0 0; padding: 10px 14px; border-radius: 12px; background: var(--tab); border: 2px dashed #a9cfa9; }
+.dev-plan ul { margin: 6px 0 0; padding-left: 20px; }
+.dev-plan li { margin: 3px 0; font-size: 0.9rem; }
+
+/* ---------- 규칙 사전 ---------- */
+.tabs .rules-tab { margin-left: auto; }
+.rule-search { width: 100%; font: inherit; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: #fff; margin: 8px 0; }
+.rule-list { display: grid; gap: 10px; }
+.rule-card { padding: 12px 14px; border-radius: 14px; background: #fff; border: 2px solid var(--line); scroll-margin-top: 12px; }
+.rule-card.focus { border-color: var(--accent); box-shadow: 0 0 0 3px #d7f0d7; }
+.rule-card h3 { margin: 0 0 6px; font-size: 1rem; }
+.rule-card .rule-no { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 0.75rem; margin-right: 4px; }
+.rule-card ul { margin: 0; padding-left: 18px; }
+.rule-card li { margin: 3px 0; font-size: 0.9rem; line-height: 1.5; }
+.rule-games { margin: 8px 0 0; font-size: 0.82rem; color: var(--muted); }
+.rule-game { margin-right: 6px; color: var(--accent); font-weight: 700; text-decoration: none; }
+.review-rules .rule-more { margin-left: 6px; font-size: 0.75rem; color: var(--accent); text-decoration: none; }
+
+/* 개발 중인 게임: 탭은 투명하게, 소개에는 좋아요 · 개발 우선순위 */
+.tabs .tab.dev { opacity: 0.45; }
+.tabs .tab.dev:hover, .tabs .tab.dev[aria-current='page'] { opacity: 0.85; }
+.like-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 12px 0 0; }
+.like-btn { background: #fff; color: #b5485c; border: 2px solid #f1c6cf; }
+.like-btn[aria-pressed='true'] { background: #fbe4e8; border-color: #e7a1b0; }
+.like-btn b { font-variant-numeric: tabular-nums; }
+.dev-priority { margin: 12px 0 0; font-size: 0.9rem; }
+.dev-priority ol { margin: 6px 0 0; padding-left: 22px; }
+.dev-priority li { margin: 2px 0; }
+.dev-priority li a { color: inherit; text-decoration: none; font-weight: 700; }
+.dev-priority li.me a { color: var(--accent); }
+.dev-priority .n { color: #b5485c; font-weight: 700; font-variant-numeric: tabular-nums; }
+.lock-note:empty, .try-msg:empty { display: none; }
+.rule-game.dev { color: #a3a397; font-weight: 600; }
+.rule-game.dev small { font-size: 0.72rem; }
+
+/* 게임 소개: 이런 분께 추천 */
+.audience { margin: -4px 0 12px; padding: 6px 12px; border-radius: 10px; background: #f3f0e2; font-size: 0.86rem; }
+.audience b { color: #86602a; margin-right: 4px; }
+/* 넷볼 규칙 사전: 5개씩 쪽 나누기 */
+.rule-pages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 0 0 10px; }
+.rule-pages button {
+  display: grid; gap: 0; padding: 6px 4px; border-radius: 10px; border: 2px dashed #a9cfa9; background: #fff; cursor: pointer;
+  font: inherit; color: var(--ink); text-align: center;
+}
+.rule-pages button small { font-size: 0.7rem; color: var(--muted); }
+.rule-pages button[aria-current='true'] { border-style: solid; border-color: var(--accent); background: var(--tab-on); }
+.rule-pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 12px 0 0; }
+.rule-pager .btn:disabled { opacity: 0.4; cursor: default; }
+
+/* 넷볼 규칙 사전: 책장을 넘기는 느낌 */
+.book { perspective: 1600px; margin: 0 0 4px; }
+.book-page {
+  position: relative; padding: 18px 18px 10px 26px; border-radius: 4px 14px 14px 4px;
+  background:
+    linear-gradient(90deg, rgba(120, 100, 60, 0.16), rgba(120, 100, 60, 0) 22px), /* 책 등 쪽 그림자 */
+    repeating-linear-gradient(0deg, transparent 0 27px, rgba(160, 140, 100, 0.08) 27px 28px), /* 종이 줄 */
+    #fbf7ec;
+  box-shadow: 0 1px 0 #e9e1cc, 0 2px 0 #f3ecda, 0 3px 0 #e6dcc3, 0 8px 18px rgba(80, 60, 20, 0.14); /* 아래로 겹친 종이 */
+  border-left: 4px solid #c9b78f;
+  transform-origin: left center;
+  backface-visibility: hidden;
+}
+/* 오른쪽 아래 접힌 귀퉁이 */
+.book-page::after {
+  content: ''; position: absolute; right: 0; bottom: 0; width: 26px; height: 26px; border-radius: 0 0 14px 0;
+  background: linear-gradient(135deg, transparent 50%, #e8dcc0 50%, #f3ead6 100%);
+  box-shadow: -2px -2px 4px rgba(80, 60, 20, 0.08);
+}
+.book-page .rule-card { background: rgba(255, 255, 255, 0.72); border-color: #e9e0c9; }
+.book-foot { margin: 10px 0 0; text-align: center; font-size: 0.82rem; color: #a08e66; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
+.book-page.turn-next { animation: page-turn-next 0.55s cubic-bezier(0.3, 0.7, 0.4, 1); }
+.book-page.turn-prev { animation: page-turn-prev 0.55s cubic-bezier(0.3, 0.7, 0.4, 1); transform-origin: right center; }
+@keyframes page-turn-next {
+  0% { transform: rotateY(70deg); opacity: 0.15; box-shadow: -12px 6px 24px rgba(80, 60, 20, 0.22); } /* 책 등(왼쪽)을 축으로, 화면 안쪽에서 넘어온다 */
+  60% { opacity: 1; }
+  100% { transform: rotateY(0); }
+}
+@keyframes page-turn-prev {
+  0% { transform: rotateY(-70deg); opacity: 0.15; box-shadow: 12px 6px 24px rgba(80, 60, 20, 0.22); }
+  60% { opacity: 1; }
+  100% { transform: rotateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .book-page.turn-next, .book-page.turn-prev { animation: none; }
+}
+/* 목차(쪽 고르기)도 책 색에 맞춰 */
+.rule-pages button { background: #fbf7ec; border-color: #d9cba6; }
+.rule-pages button[aria-current='true'] { background: #f1e6c8; border-color: #b9a274; }
+
+/* 설명 속 규칙 낱말 → 넷볼 규칙 사전 링크 */
+a.rule-link { color: inherit; text-decoration: underline dotted #8fb59a; text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
+a.rule-link:hover { color: var(--accent); text-decoration-style: solid; }
+
+/* 개발 중인 게임 미리보기 (예상 화면) */
+.dev-preview { margin: 10px 0 12px; }
+.dev-preview canvas { display: block; width: 100%; max-width: 720px; height: auto; border-radius: 14px; box-shadow: 0 2px 10px rgba(60, 80, 60, 0.12); }
+.dev-preview figcaption { margin: 6px 0 0; font-size: 0.8rem; color: var(--muted); text-align: center; }
+
+/* 규칙 링크로 따라온 규칙: 세 번 반짝 */
+.rule-card.flash { animation: rule-flash 0.6s ease-in-out 3; }
+@keyframes rule-flash {
+  0%, 100% { background-color: rgba(255, 255, 255, 0.72); box-shadow: 0 0 0 3px #d7f0d7; }
+  50% { background-color: #fff3c4; box-shadow: 0 0 0 6px #f2cf6b; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rule-card.flash { animation: none; background-color: #fff3c4; }
+}
