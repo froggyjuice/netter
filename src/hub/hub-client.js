@@ -86,6 +86,8 @@ export function createHubClient(store) {
     isSaveKey: (k) => SAVE_KEYS.includes(k),
     /** 🏆 회장에게 자랑하기 → { ok, already } */
     brag: (kind) => call('/api/me', { method: 'POST', body: { brag: kind } }),
+    /** 운영진이 보낸 축하를 봤다 */
+    cheersSeen: () => call('/api/me', { method: 'POST', body: { cheersSeen: true } }),
 
     // ----- 운영진 -----
     adminList: (code) => call('/api/admin', { adminCode: code }),
@@ -94,6 +96,8 @@ export function createHubClient(store) {
     /** 엑셀 일괄 등록 → { results: [{ ok, member | error }] } */
     adminBulk: (code, members) => call('/api/admin', { method: 'POST', body: { members }, adminCode: code }),
     /** 자랑 목록을 봤다 (홈 알림 끄기) */
+    /** 자랑에 축하 보내기 (cheer: 한마디, 비우면 기본 문구) */
+    adminCheer: (code, id, cheer) => call('/api/admin', { method: 'PATCH', body: { brag: id, cheer }, adminCode: code }),
     adminBragsSeen: (code) => call('/api/admin', { method: 'PATCH', body: { bragsSeen: true }, adminCode: code }),
     /** 받은 메시지 처리: status 'new' | 'done', note (선택) */
     adminReport: (code, id, status, note) => call('/api/admin', { method: 'PATCH', body: { report: id, status, ...(note !== undefined ? { note } : {}) }, adminCode: code }),

@@ -244,3 +244,23 @@ test('받은 메시지: 운영진 화면 목록 · 처리 완료 + 메모 · 새
   assert.equal((await hub.handleAdmin({ method: 'PATCH', headers: h, body: { report: 1, status: 'weird' } })).body.error, 'bad_report');
   assert.equal((await hub.handleAdmin({ method: 'PATCH', headers: h, body: { report: 99, status: 'done' } })).status, 404);
 });
+
+test('축하 보내기: 운영진이 자랑에 축하 → 그 회원의 내 정보에 보이고, 보면 사라짐', async () => {
+  const { hub, login, auth } = await setup();
+  const m = await login('이회원', '01033334444');
+  const a = await login('김운영', '01011112222');
+  await hub.handleMe({ method: 'POST', headers: auth(m), body: { brag: 'pass-stars' } });
+  const [b] = (await hub.handleAdmin({ method: 'GET', headers: auth(a, 'netter') })).body.brags;
+  assert.deepEqual((await hub.handleMe({ method: 'GET', headers: auth(m) })).body.cheers, []);
+  const out = await hub.handleAdmin({ method: 'PATCH', headers: auth(a, 'netter'), body: { brag: b.id, cheer: '최고예요!' } });
+  assert.equal(out.body.brag.cheer, '최고예요!');
+  const cheers = (await hub.handleMe({ method: 'GET', headers: auth(m) })).body.cheers;
+  assert.deepEqual(cheers.map((c) => [c.kind, c.cheer]), [['pass-stars', '최고예요!']]);
+  assert.equal((await hub.handleMe({ method: 'POST', headers: auth(m), body: { cheersSeen: true } })).status, 200);
+  assert.deepEqual((await hub.handleMe({ method: 'GET', headers: auth(m) })).body.cheers, []);
+  // 한마디를 비우면 기본 문구
+  await hub.handleMe({ method: 'POST', headers: auth(m), body: { brag: 'rhythm-badges' } });
+  const b2 = (await hub.handleAdmin({ method: 'GET', headers: auth(a, 'netter') })).body.brags.find((x) => x.kind === 'rhythm-badges');
+  assert.equal((await hub.handleAdmin({ method: 'PATCH', headers: auth(a, 'netter'), body: { brag: b2.id, cheer: '  ' } })).body.brag.cheer, '정말 대단해요! 축하해요 🎉');
+  assert.equal((await hub.handleAdmin({ method: 'PATCH', headers: auth(a, 'netter'), body: { brag: 999 } })).status, 404);
+});

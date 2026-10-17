@@ -236,6 +236,7 @@ function route() {
   const hubPage = id === '' || id === 'home' ? 'home' : ['calendar', 'me', 'admin'].includes(id) ? id : null;
   syncNav(hubPage ?? (id.startsWith('rules') ? 'rules' : 'play'));
   els.tabs.hidden = Boolean(hubPage) || id.startsWith('rules');
+  $('#play-tagline').hidden = els.tabs.hidden; // 놀이터 화면에만
   if (hubPage) {
     document.body.dataset.page = 'hub';
     document.body.dataset.game = '';
@@ -791,11 +792,10 @@ function renderRulesPage(focusNo) {
       <h3><span class="rule-no">Rule ${r.no}</span> ${r.title}</h3>
       <ul class="rule-lines">${r.points.map((p, i) => `<li data-line="${lineKey(r.no, i)}">${lineHtml(r, i)}</li>`).join('')}</ul>
       <details class="rule-src">
-        <summary>📜 근거 원문보기</summary>
+        <summary>📜 근거 원문보기 (키워드)</summary>
         <ol>${r.points
           .map((p) => `<li><b>Rule ${escHtml(p.ref)}</b> <span class="muted small">· 규정집 ${p.p}쪽</span><br /><q lang="en">${escHtml(p.en)}</q></li>`)
           .join('')}</ol>
-        <p class="small muted">위 줄과 같은 순서예요. 원문은 저작권 때문에 핵심 구절만 보여 줘요 — <a href="${OFFICIAL_RULES_URL}" target="_blank" rel="noopener">공식 규정집 전체 보기 ↗</a></p>
       </details>
       ${r.games.length ? `<p class="rule-games">🎮 연습해요: ${r.games.map(gameLink).join(' ')}</p>` : ''}
     </article>`;

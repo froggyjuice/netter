@@ -110,6 +110,11 @@ create table if not exists public.brags (
 
 alter table public.brags enable row level security;
 
+-- 운영진의 '축하 보내기' (자랑한 회원이 홈에서 본다)
+alter table public.brags add column if not exists cheer       text check (char_length(cheer) <= 100);
+alter table public.brags add column if not exists cheered_at  timestamptz;
+alter table public.brags add column if not exists cheer_seen  boolean not null default false;
+
 -- 가입 승인 요청: 등록되지 않은 이름 + 전화번호로 로그인하려던 사람이 보낸다. 운영진이 승인하면 바로 회원이 된다.
 create table if not exists public.join_requests (
   id          bigint generated always as identity primary key,

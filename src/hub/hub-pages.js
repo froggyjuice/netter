@@ -29,6 +29,28 @@ export function renderHome(el, { hub, openLogin }) {
       ${hub.isAdmin() ? '<a class="hub-card" href="#/admin"><span class="i">⚙️</span><b>운영진</b><small>회원 명단 관리</small></a>' : ''}
     </div>`;
   el.querySelector('#home-login')?.addEventListener('click', openLogin);
+  if (!me) return;
+  hub
+    .me()
+    .then((out) => {
+      if (!el.isConnected) return;
+      // 운영진이 보낸 축하 (자랑한 회원)
+      if (out?.cheers?.length && !el.querySelector('.cheer-box')) {
+        el.querySelector('.hub-hello')?.insertAdjacentHTML(
+          'afterend',
+          `<div class="cheer-box">
+            <p class="cheer-title">🎉 회장님이 축하를 보냈어요!</p>
+            ${out.cheers.map((c) => `<p>${BRAG_LABELS[c.kind] ?? ''} — <b>“${esc(c.cheer)}”</b></p>`).join('')}
+            <button type="button" class="btn small" id="cheer-ok">고마워요 💚</button>
+          </div>`,
+        );
+        el.querySelector('#cheer-ok').addEventListener('click', () => {
+          el.querySelector('.cheer-box')?.remove();
+          hub.cheersSeen().catch(() => {});
+        });
+      }
+    })
+    .catch(() => {});
   // 운영진: 아직 처리 안 한 가입 요청 · 메시지 · 자랑이 있으면 알림
   if (hub.isAdmin()) {
     hub
@@ -256,7 +278,13 @@ export async function renderAdmin(el, { hub, showToast }) {
     box.innerHTML = `<h3>🏆 자랑 목록 <small>${fresh ? `새 자랑 ${fresh}개` : ''}</small></h3>${
       brags.length
         ? `<ul>${brags
-            .map((b) => `<li class="${b.seen ? '' : 'new'}">${b.seen ? '' : '<span class="new-tag">NEW</span>'}<b>${esc(b.name)}</b> · ${BRAG_LABELS[b.kind] ?? esc(b.kind)} <span class="muted small">${fmtTime(b.created_at)}</span></li>`)
+            .map(
+              (b) => `<li data-brag-id="${b.id}" class="${b.seen ? '' : 'new'}">${b.seen ? '' : '<span class="new-tag">NEW</span>'}<b>${esc(b.name)}</b> · ${BRAG_LABELS[b.kind] ?? esc(b.kind)} <span class="muted small">${fmtTime(b.created_at)}</span>
+                ${b.cheered_at
+                  ? `<br /><span class="small">🎉 축하 보냄 ${fmtTime(b.cheered_at)} · “${esc(b.cheer ?? '')}”</span>`
+                  : `<span class="cheer-row"><input class="cheer-input" maxlength="100" placeholder="한마디 (비우면 '정말 대단해요! 축하해요 🎉')" /><button type="button" class="btn small" data-cheer>🎉 축하 보내기</button></span>`}
+              </li>`,
+            )
             .join('')}</ul>`
         : '<p class="muted small">아직 자랑이 없어요. 배지나 별을 모두 모은 회원이 자랑하면 여기에 보여요.</p>'
     }`;
@@ -347,6 +375,21 @@ export async function renderAdmin(el, { hub, showToast }) {
       reports = reports.map((r) => (r.id === report.id ? { ...r, ...report } : r));
       renderReports();
       showToast(status === 'done' ? '처리 완료로 옮겼어요 ✅' : '새 메시지로 되돌렸어요', 'good');
+    } catch (err) {
+      showToast(errText(err), 'bad');
+      btn.disabled = false;
+    }
+  });
+
+  el.querySelector('#brag-list').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-cheer]');
+    if (!btn) return;
+    const li = btn.closest('[data-brag-id]');
+    btn.disabled = true;
+    try {
+      await hub.adminCheer(code, Number(li.dataset.bragId), li.querySelector('.cheer-input').value);
+      showToast(`${li.querySelector('b').textContent} 님에게 축하를 보냈어요 🎉 (다음에 홈에 들어오면 보여요)`, 'good');
+      await load();
     } catch (err) {
       showToast(errText(err), 'bad');
       btn.disabled = false;
