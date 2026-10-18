@@ -1020,3 +1020,18 @@ body[data-page='hub'] #intro .admin-box, body[data-page='hub'] #intro .brag-list
 body:has(#stage:not([hidden])) :is(.topbar, .mainnav, .tabs, .play-tagline, .foot, #board, #comments) { display: none !important; }
 body:has(#stage:not([hidden])) .wrap { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: 8px; }
 body:has(#stage:not([hidden])) .stage { margin-bottom: 0; }
+
+/* 게임 위 점수 줄 (PC): 시간 · 점수 글자 수가 바뀌어도 줄이 바뀌지 않게
+   1줄 = 포지션 · 시간 · 점수(한 줄 고정), 2줄 = 전체 화면 · 일시정지 · 소리 · 배경음악 버튼 (늘 아랫줄) */
+.hud .pill { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.hud #hud-score { display: inline-block; min-width: 4ch; text-align: right; }
+@media (hover: hover) and (pointer: fine) {
+  .hud { flex-wrap: wrap; row-gap: 6px; }
+  .hud .spacer { flex: 0 0 100%; height: 0; }
+  .hud #hud-pos { min-width: 0; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+  .hud .clock, .hud .pill:has(#hud-score) { flex: none; }
+}
+/* 좁은 틀(세로 창)에서는 포지션 이름을 줄여 첫 줄이 늘 한 줄에 들어가게 */
+@container (max-width: 440px) {
+  .hud .pill .long { display: none; }
+}
