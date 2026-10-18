@@ -14,7 +14,7 @@ import { submitScore, submitReport, fetchLikes, sendLike, ERROR_TEXT } from './s
 import { createBoard } from './ui/board.js';
 import { drawCourtPreview } from './ui/court-preview.js';
 import * as audio from './shared/audio.js';
-import { setupInstall } from './ui/install.js';
+import { setupInstall, enterGameFullscreen, exitGameFullscreen } from './ui/install.js';
 import { RULEBOOK, OFFICIAL_RULES_URL, searchRules, chapterOf } from './shared/rulebook.js';
 import { HIGHLIGHT_KEY, parseHighlights, addHighlight, removeHighlight, markedHtml, lineKey } from './shared/highlights.js';
 import { linkifyRules } from './ui/rule-links.js';
@@ -220,6 +220,7 @@ function route() {
   closeTerm();
   const wasPlaying = !els.stage.hidden;
   stopGame();
+  exitGameFullscreen(); // 게임 화면을 떠나면 시작 때 켠 전체 화면도 끈다
   const id = location.hash.replace(/^#\/?/, '');
   // 허브 화면: 홈 · 운영진 (주소가 없으면 홈. 예전 캘린더 · 내 정보 주소도 홈으로)
   const hubPage = ['', 'home', 'calendar', 'me'].includes(id) ? 'home' : id === 'admin' ? 'admin' : null;
@@ -320,7 +321,7 @@ function rulesHtml(p) {
       <p class="muted small">자기 몸에 부딪히면 경기가 끝나요.</p>
     </div>
     <div class="info-panel" id="${p}-mode" hidden>
-      <p><b>⚔️ 공격 (GS·GA·WA)</b><br />코트의 ${BALL_ICON}공을 먹으면 <b>+10</b>.<br />GS·GA가 <b>황금색 골 서클</b> 안에서 먹으면 슈팅 성공 <b>+30</b>!</p>
+      <p><b>⚔️ 공격 (GS·GA·WA)</b><br />코트의 ${BALL_ICON}공을 먹으면 <b>+10</b>.<br />GS·GA가 <b>황금색 골 서클</b> 안에서 먹으면 슈팅 성공 <b>+30</b>!<br />공을 든 GS·GA가 패스하지 않고 3초 안에 <b>골대(반짝이는 링 앞)</b>로 가면 슛 보너스 <b>+10</b>!</p>
       <p><b>🛡️ 수비 (GK·GD·WD)</b><br />상대 골 쪽에서 굴러오는 ${ROLL_ICON}공을 머리나 몸으로 막으면 <b>+10</b>.<br />GK·GD가 수비 서클 안에서 막으면 <b>+30</b>.<br />공을 놓치면 <b>실점</b>이에요.</p>
       <p><b>🟡 센터 (C)</b><br />공격과 수비 중 골라서 뛰어요.</p>
     </div>
@@ -1239,7 +1240,9 @@ function fitCourt() {
   const wrapRect = wrap.getBoundingClientRect();
   const above = wrapRect.top - stageTop + 8; // 8 = 게임 카드 위 여백(scroll-margin)
   const toastSpace = parseFloat(getComputedStyle(els.toast).minHeight) || 0;
-  const below = els.toast.getBoundingClientRect().top - wrapRect.bottom + toastSpace + 12; // 방향 버튼(아래에 있을 때)·안내 줄
+  const toastTop = els.toast.getBoundingClientRect().top;
+  // 방향 버튼(아래에 있을 때)·안내 줄. 안내 줄이 코트 옆에 있으면(폰 가로 존 스네이크) 아래 여백만
+  const below = toastTop >= wrapRect.bottom - 1 ? toastTop - wrapRect.bottom + toastSpace + 12 : 12;
   const viewH = scroller.clientHeight; // 화면 틀 안의 스크롤 영역 높이
   const maxW = play.clientWidth - (sideBySide ? dpad.offsetWidth + 12 : 0);
   const w = Math.max(160, Math.min(maxW, (viewH - above - below) * ratio));
@@ -1304,6 +1307,7 @@ function loadWithFonts(game) {
 }
 
 async function startGame(choicePos, choiceMode) {
+  enterGameFullscreen(); // 폰: 주소 표시줄을 숨겨 코트를 크게 (누른 순간에 불러야 허락됨)
   if (isRhythm()) return startRhythm(choicePos);
   if (isPass()) return startPassStage(choicePos);
   stopGame();
@@ -1366,6 +1370,7 @@ async function startGame(choicePos, choiceMode) {
         audio.sfx(ev.type === 'block' ? (ev.circle ? 'circleBlock' : 'block') : ev.goal ? 'goal' : 'ball');
         if (ev.goal) ruleLog.add('shooting');
         if (ev.penaltyShot) showToast('페널티 슛 성공! 🎯', 'good');
+        if (ev.shotBonus) showToast(`패스 대신 슛! 골대에 넣었어요 +${ev.points} 🎯`, 'good');
         if (ev.circle) ruleLog.add('circleDefence');
       },
       onSub: ({ from, to, mode: m }) => {
@@ -1950,12 +1955,14 @@ syncSoundButtons();
 
 // 모바일 방향 패드 (조이스틱): 패드 어디든 누른 채로 끌면, 가운데에서 손가락 쪽 방향으로 간다.
 // 방향이 바뀔 때만 한 번씩 보내고(같은 방향은 다시 안 보냄), 가운데 가까이는 그대로 둔다.
+// 존 스네이크(폰)는 떠다니는 패드: 코트를 포함해 화면 어디든 누르면 그 자리에 패드가 나타나고, 그대로 밀어서 방향을 바꾼다.
 {
   const pad = $('#dpad');
   const knob = pad.querySelector('.knob');
   const DEAD = 12; // 이만큼(px)은 움직여야 방향으로 본다 (처음 누를 때는 누른 자리 기준)
   let pid = null;
   let dir = null;
+  const floating = () => touchQuery.matches && document.body.dataset.game === 'snake' && !els.stage.hidden;
   const show = (x, y, d) => {
     const r = pad.clientWidth / 2;
     const len = Math.hypot(x, y) || 1;
@@ -1975,30 +1982,49 @@ syncSoundButtons();
       navigator.vibrate?.(6);
     }
   };
-  pad.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
+  const begin = (e) => {
     pid = e.pointerId;
     dir = null;
     pad.classList.add('held');
+    steer(e);
+  };
+  pad.addEventListener('pointerdown', (e) => {
+    if (floating()) return;
+    e.preventDefault();
     try {
       pad.setPointerCapture(e.pointerId); // 패드 밖으로 끌어도 계속 따라가게
     } catch {
       /* 지원 안 하면 패드 안에서만 */
     }
-    steer(e);
+    begin(e);
   });
-  pad.addEventListener('pointermove', (e) => {
+  // 떠다니는 패드: 게임 화면 어디든 (버튼 · 일시정지/종료 화면은 빼고)
+  document.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (pid !== null && e.isPrimary) release({ pointerId: pid }); // 손을 뗀 소식(pointerup)을 놓쳤어도 새 터치로 다시 시작
+      if (pid !== null || !floating() || !(e.target instanceof Element)) return;
+      if (e.target.closest('button, a, input, textarea, select, dialog, .overlay, .hud')) return;
+      e.preventDefault();
+      pad.style.left = `${e.clientX}px`;
+      pad.style.top = `${e.clientY}px`;
+      pad.classList.add('float');
+      begin(e);
+    },
+    { passive: false },
+  );
+  window.addEventListener('pointermove', (e) => {
     if (e.pointerId === pid) steer(e);
   });
-  const release = (e) => {
+  function release(e) {
     if (e.pointerId !== pid) return;
     pid = null;
     dir = null;
-    pad.classList.remove('held');
+    pad.classList.remove('held', 'float');
     show(0, 0, null);
-  };
-  pad.addEventListener('pointerup', release);
-  pad.addEventListener('pointercancel', release);
+  }
+  window.addEventListener('pointerup', release);
+  window.addEventListener('pointercancel', release);
 }
 
 // 리듬 슈팅 슛·패스 버튼 (누르는 순간 판정되도록 pointerdown)

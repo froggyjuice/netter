@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { COURT, POSITION_KEYS, MATCHUP, isAllowed, isAllowedForOpponent, zoneOf } from '../src/shared/zones.js';
 import {
-  createGame, setDirection, step, tickMs, modeFor,
+  createGame, setDirection, step, tickMs, modeFor, SHOT_BONUS, GOAL_POST_CELL,
   penaltyReleaseTicks, BALL_POINTS, GOAL_POINTS, BLOCK_POINTS, CIRCLE_BLOCK_POINTS, OFFSIDE_PENALTY, ROLL_EVERY,
   PASS_POINTS, PASS_MS, passTicks, nearOffside, ITEM_OFFSIDE_MARGIN, oppEvery, spawnItem,
 } from '../src/games/snake-logic.js';
@@ -20,6 +20,7 @@ function place(state, cells, dir = null) {
   state.snake = cells.map(([c, r]) => ({ c, r }));
   state.dir = dir;
   state.queuedDir = null;
+  state.queuedDir2 = null;
   parkOpp(state);
 }
 
@@ -51,6 +52,61 @@ test('달리는 중 정반대 방향 입력은 무시된다', () => {
   step(g, seeded());
   assert.equal(setDirection(g, 'left'), false);
   assert.equal(setDirection(g, 'up'), true);
+});
+
+test('한 틱 안에 옆으로 꺾었다가 반대로 돌아도 몸에 부딪히지 않는다 (두 번째 꺾기는 다음 틱)', () => {
+  const g = createGame('C', seeded());
+  g.item = null;
+  place(g, [[15, 7], [14, 7], [13, 7]], 'right');
+  // 같은 틱 안: ↑ 다음 ← (예전에는 ← 가 ↑ 를 덮어써서 바로 목으로 꺾여 탈락)
+  assert.equal(setDirection(g, 'up'), true);
+  assert.equal(setDirection(g, 'left'), true);
+  assert.equal(setDirection(g, 'down'), false, '첫 꺾기(↑)의 정반대는 막는다');
+  let ev = step(g, seeded());
+  assert.ok(!ev.some((e) => e.type === 'crash'));
+  assert.equal(g.dir, 'up');
+  ev = step(g, seeded());
+  assert.ok(!ev.some((e) => e.type === 'crash'));
+  assert.equal(g.dir, 'left');
+  assert.deepEqual(g.snake[0], { c: 14, r: 6 });
+});
+
+test('미뤄 둔 꺾기가 그 사이 몸 쪽이 되면 버린다', () => {
+  const g = createGame('C', seeded());
+  g.item = null;
+  place(g, [[15, 7], [14, 7], [13, 7]], 'right');
+  g.queuedDir = 'left'; // (벽에 튕긴 뒤처럼) 지금 보니 목 쪽이 된 입력
+  step(g, seeded());
+  assert.equal(g.dir, 'right', '목 쪽 입력은 무시하고 하던 방향으로');
+});
+
+test('공을 든 GS·GA가 패스하지 않고 3초 안에 골대(링 앞 칸)로 가면 슛 보너스 +10', () => {
+  for (const pos of ['GS', 'GA']) {
+    const g = createGame(pos, seeded());
+    const { c, r } = GOAL_POST_CELL;
+    place(g, [[c - 1, r], [c - 2, r], [c - 3, r]], 'right');
+    g.item = null;
+    g.score = 30;
+    g.pass = { c: c - 6, r: 2, deadline: g.ticks + 10, total: 10 };
+    const ev = step(g, seeded());
+    const shot = ev.find((e) => e.type === 'ball' && e.shotBonus);
+    assert.ok(shot, pos);
+    assert.equal(shot.points, SHOT_BONUS);
+    assert.equal(g.score, 30 + SHOT_BONUS);
+    assert.equal(g.pass, null);
+    assert.equal(g.goals, 1);
+  }
+});
+
+test('공을 들지 않았거나 슈터가 아니면 골대 칸에 가도 보너스 없음', () => {
+  const g = createGame('GS', seeded());
+  const { c, r } = GOAL_POST_CELL;
+  place(g, [[c - 1, r], [c - 2, r], [c - 3, r]], 'right');
+  g.item = null;
+  g.pass = null;
+  g.score = 0;
+  assert.ok(!step(g, seeded()).some((e) => e.shotBonus));
+  assert.equal(g.score, 0);
 });
 
 test('오프사이드: 멈추지 않고 옆으로 튕기며 −10점, 목숨은 그대로', () => {

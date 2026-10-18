@@ -1,7 +1,7 @@
 // 존 스네이크 화면(Phaser). 규칙은 snake-logic.js, 이 파일은 그리기와 입력만 담당한다.
 // 화면 방향(가로/세로)은 view-transform.js 로 바꾼다: 게임 좌표는 항상 30×15, 그릴 때만 변환.
 import Phaser from 'phaser';
-import { COURT, isAllowed } from '../shared/zones.js';
+import { COURT, isAllowed, zoneOf } from '../shared/zones.js';
 import { cellColor } from '../shared/court-colors.js';
 import { THEME, hex, FONT } from '../shared/theme.js';
 import { zoneEdges, offsideEdges, ZONE_LABELS, CENTRE_CIRCLE } from '../shared/court-geometry.js';
@@ -41,6 +41,10 @@ const bibOf = (pos) => BIB[pos === 'C' ? 'centre' : modeFor(pos)];
  * 경기는 4쿼터(match-logic.js). 쿼터마다 새 판(createGame)으로 센터 패스부터, 기록은 쿼터마다 더한다.
  *   input(dir)의 dir은 화면 기준 방향(방향 버튼·방향키). 세로 화면이면 게임 방향으로 바꿔서 넣는다.
  */
+// 우리 골 서클(1구역) 칸 목록: 게임 중 반짝임에 쓴다
+const OUR_CIRCLE = [];
+for (let r = 0; r < COURT.rows; r++) for (let c = 0; c < COURT.cols; c++) if (zoneOf(c, r) === 1) OUR_CIRCLE.push({ c, r });
+
 export function startSnake({ parent, position, mode, orientation = 'landscape', hooks = {} }) {
   const match = createMatch();
   let orient = orientation;
@@ -297,6 +301,8 @@ export function startSnake({ parent, position, mode, orientation = 'landscape', 
     }
 
     setupSwipe() {
+      // 폰(터치)은 main.js 의 떠다니는 패드가 코트 위 터치까지 맡는다 (두 입력이 겹치지 않게)
+      if (matchMedia('(hover: none), (pointer: coarse)').matches) return;
       let origin = null;
       this.input.on('pointerdown', (p) => {
         origin = { x: p.x, y: p.y };
@@ -479,12 +485,38 @@ export function startSnake({ parent, position, mode, orientation = 'landscape', 
       this.subLabel.setVisible(false);
       this.passLabel.setVisible(false);
 
+      this.drawOurGoal(g, t);
       this.drawPass(g);
       this.drawShot(g, t);
       this.drawItem(g, t);
       this.drawCaterpillar(g, t);
       this.drawOpponent(g, t);
       this.drawCentrePair(g, t);
+    }
+
+    // 우리 골(우리가 슛하는 골, 게임 좌표 오른쪽): 골 서클 테두리와 링이 천천히 반짝인다
+    drawOurGoal(g, t) {
+      const pulse = 0.5 + 0.5 * Math.sin(t / 260);
+      // 골 서클 칸(계단 모양 그대로 — 화면의 경계 = 실제 경계)을 금빛으로 덮었다 걷었다
+      g.fillStyle(THEME.hot, 0.08 + 0.22 * pulse);
+      for (const { c, r } of OUR_CIRCLE) {
+        const a = at(c, r);
+        const b = at(c + 1, r + 1);
+        g.fillRect(Math.min(a.x, b.x), Math.min(a.y, b.y), CELL, CELL);
+      }
+      const ring = at(COURT.cols - 0.6, COURT.rows / 2);
+      g.fillStyle(THEME.hot, 0.25 + 0.35 * pulse);
+      g.fillCircle(ring.x, ring.y, CELL * (0.75 + 0.25 * pulse));
+      g.lineStyle(3, THEME.goalRing, 0.9);
+      g.strokeCircle(ring.x, ring.y, CELL * (0.75 + 0.25 * pulse));
+      if (!this.ourGoalLabel) {
+        this.ourGoalLabel = this.add
+          .text(0, 0, '우리 골', { fontFamily: FONT, fontSize: '13px', fontStyle: 'bold', color: '#7a5a00', stroke: '#ffffff', strokeThickness: 4 })
+          .setOrigin(0.5)
+          .setDepth(1);
+      }
+      const lp = at(COURT.cols - 2.1, COURT.rows / 2);
+      this.ourGoalLabel.setPosition(lp.x, lp.y).setAlpha(0.6 + 0.4 * pulse);
     }
 
     // 패스 대상: 같은 팀 표시 + 남은 시간 링 (3초 → 0)

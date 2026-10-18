@@ -986,3 +986,32 @@ body[data-page='hub'] #intro .admin-box, body[data-page='hub'] #intro .brag-list
 .term-pop[hidden] { display: none; }
 .term-pop .muted { font-size: 11px; }
 .term-pop p { margin: 4px 0 0; }
+
+/* 존 스네이크(폰): 고정 방향 패드를 없애 코트를 크게. 화면 어디든 누르면 그 자리에 패드가 떠서 밀어 조종 */
+@media (hover: none), (pointer: coarse) {
+  body[data-game='snake'] .dpad { display: none; }
+  body[data-game='snake'] .dpad.float.held {
+    display: block; position: fixed; z-index: 40; margin: 0; --pad: 128px;
+    translate: -50% -50%; opacity: 0.75; pointer-events: none;
+  }
+  body[data-game='snake'] #stage:not([hidden]) { touch-action: none; user-select: none; -webkit-user-select: none; }
+}
+/* 폰 게임 중: 코트 양옆 여백을 줄이고, 놀이터 소개 한 줄은 숨긴다 */
+@media (hover: none), (pointer: coarse) {
+  body:has(#stage:not([hidden])) .play-tagline { display: none; }
+  body:has(#stage:not([hidden])) .wrap { padding-left: max(4px, env(safe-area-inset-left)); padding-right: max(4px, env(safe-area-inset-right)); }
+  body:has(#stage:not([hidden])) .stage { padding: 8px 6px; border-radius: 12px; }
+}
+/* 폰 가로 존 스네이크: 점수 줄과 안내를 코트 왼쪽 한 칸에 모아 → 코트를 화면 높이 끝까지 */
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
+  body[data-game='snake'] .stage {
+    display: grid; grid-template-columns: 118px minmax(0, 1fr); grid-template-rows: auto 1fr; grid-template-areas: 'hud play' 'toast play'; align-items: start; gap: 6px 8px;
+  }
+  body[data-game='snake'] .stage .hud { grid-area: hud; flex-direction: row; flex-wrap: wrap; align-items: center; margin: 0; }
+  body[data-game='snake'] .stage .hud .pill { flex: 1 1 100%; }
+  body[data-game='snake'] .stage .hud .spacer { display: none; }
+  body[data-game='snake'] .stage .hud .pill { text-align: center; }
+  body[data-game='snake'] .stage .play { grid-area: play; justify-content: center; }
+  body[data-game='snake'] .stage .toasts { grid-area: toast; margin: 0; font-size: 0.75rem; }
+  body[data-game='snake'] .stage .stage-brief { display: none; }
+}

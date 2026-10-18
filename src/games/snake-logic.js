@@ -51,6 +51,9 @@ export const CIRCLE_BLOCK_POINTS = 30; // 수비 서클 안에서 GK/GD가 막�
 export const OFFSIDE_PENALTY = 10;
 export const ROLL_EVERY = 3; // 굴러오는 공은 뱀이 3칸 갈 때 1칸 움직인다
 export const PASS_POINTS = 20;
+export const SHOT_BONUS = 10; // 공을 든 GS·GA가 패스하지 않고 3초 안에 골대(링 앞 칸)로 가서 슛하면 보너스
+/** 우리 골대 링 바로 앞 칸 (골라인 가운데, 게임 좌표 오른쪽 끝) */
+export const GOAL_POST_CELL = Object.freeze({ c: COURT.cols - 1, r: Math.floor(COURT.rows / 2) });
 export const PASS_MS = 3000; // Rule 11.4: 3초
 const PASS_DIST = [4, 7]; // 패스 대상은 머리에서 4~7칸(가로+세로) 떨어진 곳
 export const ITEM_OFFSIDE_MARGIN = 1; // 공·교체 아이템은 오프사이드 칸에서 1칸 이내에는 나오지 않는다
@@ -222,6 +225,7 @@ export function createGame(position, rng = Math.random, opts = {}) {
     snake, // 머리가 index 0
     dir: null, // 첫 입력 전/튕길 곳이 없어 멈춘 뒤에는 정지
     queuedDir: null,
+    queuedDir2: null, // 한 틱 안의 두 번째 꺾기
     item: null,
     grow: 0, // 몸으로 공을 막았을 때 늘어날 칸 수
     pass: null, // 패스 대상 { c, r, deadline, total }
@@ -292,18 +296,34 @@ function startFromCentre(state, rng, ours) {
   state.centreBall = { from, via: { ...via }, to: { c: state.item.c, r: state.item.r }, ours };
 }
 
-/** 방향 입력. 정반대 방향·몸(목) 쪽은 무시한다. 정지 상태에서도 몸 쪽으로는 갈 수 없다. */
+/** dir 로 한 칸 가면 바로 목(몸 둘째 칸)인가 — 그 방향으로 꺾으면 바로 몸에 부딪힌다 */
+function intoNeck(state, dir) {
+  if (state.snake.length < 2) return false;
+  const [head, neck] = state.snake;
+  return head.c + DIRS[dir].c === neck.c && head.r + DIRS[dir].r === neck.r;
+}
+
+/**
+ * 방향 입력. 정반대 방향 · 목 쪽은 무시한다.
+ * 한 틱 안에 두 번 꺾으면(예: 오른쪽으로 가다가 ↑ 다음 ←) 두 번째는 다음 틱으로 미뤄 둔다 (queuedDir2).
+ * 예전에는 두 번째 입력이 첫 입력을 덮어써서, 옆으로 꺾었다 돌아오는 빠른 입력이 그대로 몸 쪽으로 꺾여 탈락했다.
+ */
 export function setDirection(state, name) {
   if (state.over || !DIRS[name]) return false;
-  const current = state.queuedDir ?? state.dir;
-  if (current && OPPOSITE[current] === name && state.snake.length > 1) return false;
-  // 정지 상태에는 current가 없으므로 목 칸 방향을 따로 막는다.
-  if (!current && state.snake.length > 1) {
-    const head = state.snake[0];
-    const neck = state.snake[1];
-    if (head.c + DIRS[name].c === neck.c && head.r + DIRS[name].r === neck.r) return false;
+  if (!state.queuedDir) {
+    if (state.dir === name) return true;
+    if (state.dir && OPPOSITE[state.dir] === name && state.snake.length > 1) return false;
+    if (intoNeck(state, name)) return false; // 정지 상태에서도 몸 쪽으로는 못 간다
+    state.queuedDir = name;
+    state.queuedDir2 = null;
+    return true;
   }
-  state.queuedDir = name;
+  if (state.queuedDir === name) {
+    state.queuedDir2 = null;
+    return true;
+  }
+  if (OPPOSITE[state.queuedDir] === name) return false;
+  state.queuedDir2 = name; // 첫 꺾기 다음 틱에
   return true;
 }
 
@@ -585,8 +605,11 @@ export function step(state, rng = Math.random) {
   }
 
   if (state.queuedDir) {
-    state.dir = state.queuedDir;
-    state.queuedDir = null;
+    const d = state.queuedDir;
+    state.queuedDir = state.queuedDir2 ?? null;
+    state.queuedDir2 = null;
+    // 그 사이 벽에 튕겨 방향이 바뀌었으면, 몸 쪽이 된 입력은 버린다
+    if (!intoNeck(state, d)) state.dir = d;
   }
   if (!state.dir) return events; // 입력 대기
 
@@ -692,6 +715,14 @@ export function step(state, rng = Math.random) {
       state.score += GOAL_POINTS;
       state.goals += 1;
       events.push({ type: 'ball', score: state.score, points: GOAL_POINTS, goal: true, penaltyShot: true, cell: { ...next } });
+      respawn(state, events, rng);
+      spawned = true;
+    } else if (canShootAt(state.position, next.c, next.r) && same(next, GOAL_POST_CELL)) {
+      // 패스 대신 골대로: 공을 든 GS·GA가 3초 안에 링 앞에 닿으면 슛 성공 보너스
+      state.pass = null;
+      state.score += SHOT_BONUS;
+      state.goals += 1;
+      events.push({ type: 'ball', score: state.score, points: SHOT_BONUS, goal: true, shotBonus: true, cell: { ...next } });
       respawn(state, events, rng);
       spawned = true;
     } else if (next.c === p.c && next.r === p.r) {

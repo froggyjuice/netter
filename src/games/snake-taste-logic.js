@@ -42,12 +42,10 @@ export function createTaste(position, rng = Math.random) {
 /** 방향 입력 (게임 방향). 몸 쪽(정반대)으로는 바로 돌 수 없다 */
 export function steer(state, dir) {
   if (!DIRS[dir]) return false;
-  const cur = state.queued ?? state.dir;
-  if (cur && OPPOSITE[cur] === dir) return false;
-  if (!cur) {
-    const [h, n] = state.snake;
-    if (h.c + DIRS[dir].c === n.c && h.r + DIRS[dir].r === n.r) return false;
-  }
+  // 지금 진행 방향의 정반대 · 목 쪽은 막는다 (한 틱 안에 꺾었다 되돌아와도 몸 쪽으로 꺾이지 않게, 기준은 실제 방향)
+  if (state.dir && OPPOSITE[state.dir] === dir) return false;
+  const [h, n] = state.snake;
+  if (n && h.c + DIRS[dir].c === n.c && h.r + DIRS[dir].r === n.r) return false;
   state.queued = dir;
   return true;
 }
