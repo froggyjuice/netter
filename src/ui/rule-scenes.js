@@ -12,6 +12,139 @@ const bubble = (ctx, t, x, y, o = {}) => kitBubble(ctx, t, x, y, { ...o, size: M
 const COURT_W = 30.5;
 const COURT_H = 15.25;
 const SURROUND = '#ebe6d6'; // 코트 밖
+// 골대 (Rule 1.13–1.14): 골라인 가운데 기둥, 높이 3.05m, 링 안지름 38cm, 링은 기둥에서 15cm 앞으로 나온 막대에
+const RING_R = 0.19;
+const RING_ARM = 0.15;
+const POST_H = 3.05;
+const POST = '#6b716d';
+
+/** 위에서 본 골대: 기둥(골라인 위) · 15cm 막대 · 링과 그물. 실제 크기는 너무 작아서 알아보게 키운다.
+ *  dir: 코트 안쪽 방향(+1 오른쪽으로, −1 왼쪽으로) → 링 가운데 [x, y] */
+function goalpostTop(ctx, gx, gy, dir, cell) {
+  const k = Math.max(1, Math.min(2.6, 16 / (RING_R * cell))); // 링 반지름이 16px 안팎이 되게
+  const ringR = RING_R * cell * k;
+  const rx = gx + dir * (RING_ARM + RING_R) * cell * k;
+  const postR = Math.max(4, 0.06 * cell * k);
+  ctx.fillStyle = 'rgba(0,0,0,0.12)'; // 그림자
+  ctx.beginPath();
+  ctx.ellipse(rx + 3, gy + 4, ringR, ringR * 0.9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = POST; // 막대
+  ctx.lineWidth = Math.max(3, postR * 0.8);
+  ctx.beginPath();
+  ctx.moveTo(gx, gy);
+  ctx.lineTo(rx - dir * ringR, gy);
+  ctx.stroke();
+  ctx.fillStyle = POST; // 기둥 (위에서 보면 동그라미)
+  ctx.beginPath();
+  ctx.arc(gx, gy, postR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.save(); // 그물: 흰 망
+  ctx.beginPath();
+  ctx.arc(rx, gy, ringR, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(150,150,150,0.7)';
+  ctx.lineWidth = 1;
+  const step = Math.max(4, ringR / 3);
+  for (let d = -ringR * 2; d <= ringR * 2; d += step) {
+    ctx.beginPath();
+    ctx.moveTo(rx + d - ringR, gy - ringR);
+    ctx.lineTo(rx + d + ringR, gy + ringR);
+    ctx.moveTo(rx + d + ringR, gy - ringR);
+    ctx.lineTo(rx + d - ringR, gy + ringR);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.strokeStyle = hex(THEME.goalRing); // 링
+  ctx.lineWidth = Math.max(2.5, ringR * 0.22);
+  ctx.beginPath();
+  ctx.arc(rx, gy, ringR, 0, Math.PI * 2);
+  ctx.stroke();
+  return [rx, gy, ringR];
+}
+
+/** 옆에서 본 골대 (작은 창). 바닥 왼쪽에 기둥, 링은 오른쪽으로.
+ *  ball: 'through' 이면 공이 링 위에서 아래로 통과하는 모습 · hPost: 기둥 높이(m), 글씨 postLabel */
+function goalpostSide(ctx, g, x, y, w, h, { ball = 'through', hPost = POST_H, scaleH = POST_H, postLabel = '3.05m', title = '' } = {}) {
+  ctx.fillStyle = 'rgba(255,255,255,0.93)';
+  ctx.strokeStyle = '#c9d8c6';
+  ctx.lineWidth = 2;
+  rr(ctx, x, y, w, h, 12);
+  ctx.fill();
+  ctx.stroke();
+  const floor = y + h - 22;
+  const top = y + (title ? 78 : 22); // 링 위로 공이 들어올 자리
+  const px = x + w * 0.38;
+  const m = (floor - top) / scaleH; // 1m 당 px
+  const py = floor - hPost * m;
+  ctx.strokeStyle = '#b9b39f'; // 바닥
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x + 10, floor);
+  ctx.lineTo(x + w - 10, floor);
+  ctx.stroke();
+  ctx.strokeStyle = POST; // 기둥 · 막대
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(px, floor);
+  ctx.lineTo(px, py);
+  ctx.lineTo(px + 14, py);
+  ctx.stroke();
+  const rr0 = 22; // 링 반지름 (키움)
+  const rcx = px + 14 + rr0;
+  ctx.strokeStyle = 'rgba(140,140,140,0.8)'; // 그물
+  ctx.lineWidth = 1.2;
+  for (let i = 0; i <= 4; i++) {
+    const t = i / 4;
+    ctx.beginPath();
+    ctx.moveTo(rcx - rr0 + t * rr0 * 2, py);
+    ctx.lineTo(rcx - rr0 * 0.55 + t * rr0 * 1.1, py + 34);
+    ctx.stroke();
+  }
+  for (const d of [12, 24]) {
+    const k = 1 - (d / 34) * 0.45;
+    ctx.beginPath();
+    ctx.moveTo(rcx - rr0 * k, py + d);
+    ctx.lineTo(rcx + rr0 * k, py + d);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = hex(THEME.goalRing); // 링 (옆에서 보면 납작한 타원)
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  ctx.ellipse(rcx, py, rr0, 6, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  // 높이 표시
+  ctx.strokeStyle = hex(THEME.ink);
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(px - 16, floor);
+  ctx.lineTo(px - 16, py);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.save();
+  ctx.translate(px - 26, (floor + py) / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.font = `bold 13px ${FONT}`;
+  ctx.fillStyle = hex(THEME.ink);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(postLabel, 0, 0);
+  ctx.restore();
+  if (title) label(ctx, title, x + w / 2, y + 20, { size: 11, bg: 'rgba(255,255,255,0)' });
+  if (ball === 'through') {
+    // 링 위에서 아래로 완전히 통과 (Rule 9.1)
+    arrow(ctx, rcx, py - 40, rcx, py + 44, { color: hex(THEME.good), width: 2.5, dash: [5, 4], head: 8 });
+    drawBall(g, rcx, py - 24, 9, 0.3);
+    ctx.fillStyle = 'rgba(237,161,94,0.35)';
+    ctx.beginPath();
+    ctx.arc(rcx, py + 44, 8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return { rcx, py };
+}
 
 /** 코트를 (mx0, my0) m 부터 1m = cell px 로 그린다 → m 좌표를 px 로 바꾸는 함수 */
 function courtView(ctx, { mx0 = -0.9, my0 = -0.45, cell = 22.3, forbid = null } = {}) {
@@ -70,14 +203,9 @@ function courtView(ctx, { mx0 = -0.9, my0 = -0.45, cell = 22.3, forbid = null } 
   ctx.stroke();
   ctx.lineWidth = 4;
   ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
-  // 골대 링 (골라인 가운데)
-  ctx.strokeStyle = hex(THEME.goalRing);
-  ctx.lineWidth = Math.max(2, cell * 0.08);
-  for (const [gx, s] of [[x0, 1], [x1, -1]]) {
-    ctx.beginPath();
-    ctx.arc(gx + s * 0.34 * cell, midY, Math.max(4, 0.19 * cell), 0, Math.PI * 2);
-    ctx.stroke();
-  }
+  // 골대 (골라인 가운데): 코트 안쪽으로 링이 나온다
+  P.ringL = goalpostTop(ctx, x0, midY, 1, cell);
+  P.ringR = goalpostTop(ctx, x1, midY, -1, cell);
   return P;
 }
 
@@ -280,7 +408,7 @@ function scorer(ctx, g) {
 /** Rule 6: 프리 패스로는 슛 금지 */
 function freePass(ctx, g) {
   const P = courtView(ctx, GOAL_END);
-  const [rx, ry] = P(30.16, 7.625);
+  const [rx, ry] = P.ringR;
   holder(g, 470, 160, { fx: 1, fy: 0.1 });
   bib(ctx, 'GA', 470, 205);
   arrow(ctx, 500, 150, rx - 14, ry - 8, { color: hex(THEME.danger), width: 3, dash: [7, 6], bend: -30 });
@@ -375,31 +503,48 @@ function breaking(ctx, g) {
 /** Rule 9: 골 서클 안에서 슛 = 골 */
 function goalShot(ctx, g, { inside = true, touched = false } = {}) {
   const P = courtView(ctx, GOAL_END);
-  const [rx, ry] = P(30.16, 7.625);
+  const [rx, ry, ringR] = P.ringR;
   const [cx] = P(30.5 - 4.9, 0);
   const sx = inside ? cx + 70 : cx - 40;
-  holder(g, sx, 200, { fx: 1, fy: -0.3 });
-  bib(ctx, inside ? 'GS' : 'GA', sx, 245);
-  arrow(ctx, sx + 30, 185, rx - 6, ry - 6, { color: inside ? hex(THEME.good) : hex(THEME.danger), width: 3.5, dash: [8, 6], bend: 60 });
+  const sy = 250;
+  holder(g, sx, sy, { fx: 1, fy: -0.4 });
+  bib(ctx, inside ? 'GS' : 'GA', sx, sy + 45);
+  arrow(ctx, sx + 30, sy - 18, rx - ringR * 0.6, ry - ringR * 0.6, { color: inside ? hex(THEME.good) : hex(THEME.danger), width: 3.5, dash: [8, 6], bend: 50 });
   if (touched) {
-    ghost(g, sx + 100, 110, { R: 16, lx: 0, ly: 1 });
+    // 수비(GK)가 팔을 뻗어 슛을 건드림 → 그래도 링을 통과하면 골 (Rule 9.3)
+    const tx = sx + 70;
+    const ty = sy - 95;
+    ghost(g, tx + 26, ty - 34, { R: 16, lx: -0.5, ly: 1 });
     ctx.strokeStyle = hex(THEME.opp);
     ctx.lineWidth = 5;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(sx + 110, 120);
-    ctx.lineTo(sx + 130, 135);
+    ctx.moveTo(tx + 18, ty - 22);
+    ctx.lineTo(tx + 4, ty - 4);
     ctx.stroke();
     ctx.lineCap = 'butt';
-    bump(ctx, sx + 135, 140, 14);
+    bump(ctx, tx, ty, 14);
+    bib(ctx, 'GK', tx + 60, ty - 40, 'defence');
   }
   if (!inside) {
-    foot(ctx, sx - 10, 270, 'rgba(217,100,100,0.6)', 0.1);
-    label(ctx, '골 서클 밖', sx - 10, 310, { size: 13, color: hex(THEME.danger) });
+    // 골 서클 선 바깥을 밟고 있다 (선 위는 서클 안이지만, 이 발은 밖)
+    ctx.strokeStyle = hex(THEME.danger);
+    ctx.lineWidth = 4;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.arc(P(30.5, 0)[0], ry, 4.9 * GOAL_END.cell, Math.PI * 0.62, Math.PI * 1.38);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    foot(ctx, sx - 58, sy + 26, 'rgba(217,100,100,0.7)', 0.1);
+    label(ctx, '골 서클 밖을 밟음', sx - 70, sy + 72, { size: 13, color: hex(THEME.danger) });
   }
-  drawBall(graphics(ctx), rx, ry, 8, 0);
-  verdict(ctx, rx - 40, ry - 60, inside, 22);
-  label(ctx, inside ? (touched ? '수비가 건드려도 들어가면 골!' : '골 서클 안에서 쏘면 골!') : '밖을 밟고 쏜 슛은 골 아님', 230, 40, { size: 16 });
+  drawBall(graphics(ctx), rx, ry, ringR * 0.55, 0);
+  verdict(ctx, rx - 46, ry - 62, inside, 22);
+  label(ctx, inside ? (touched ? '수비가 건드려도 들어가면 골!' : '골 서클 안에서 쏘면 골!') : '밖을 밟고 쏜 슛은 들어가도 골 아님', 250, 36, { size: 16 });
+  if (inside) {
+    goalpostSide(ctx, g, 16, 70, 168, 230, { title: '옆에서 본 골대' });
+    label(ctx, '공이 링을 위→아래로 통과', 100, 322, { size: 11 });
+  }
 }
 const goalIn = (ctx, g) => goalShot(ctx, g, { inside: true });
 const goalOut = (ctx, g) => goalShot(ctx, g, { inside: false });
@@ -648,14 +793,16 @@ function together(ctx, g) {
   label(ctx, '동시 반칙', W / 2, 40, { size: 15 });
 }
 
-/** Rule 21: 다른 수준의 경기 */
+/** Rule 21: 다른 수준의 경기 — 낮은 골대 · 작은 공 */
 function kids(ctx, g) {
   courtView(ctx, GOAL_END);
-  caterpillar(g, 330, 190, { R: 13, fx: 1, fy: 0, look: ME, segs: 2 });
-  drawBall(g, 350, 190, 5, 0);
-  caterpillar(g, 260, 260, { R: 12, fx: 1, fy: -0.4, segs: 2 });
-  card(ctx, 440, 70, 230, 60, '낮은 골대 · 작은 공', { size: 16, bg: '#fffdf6' });
-  label(ctx, '어린이 · 다른 수준 경기는 바꿔서 해도 돼요', W / 2, 325, { size: 14 });
+  goalpostSide(ctx, g, 40, 70, 190, 220, { ball: 'none', title: '국제 경기', postLabel: '3.05m' });
+  goalpostSide(ctx, g, 260, 70, 190, 220, { ball: 'none', title: '어린이 경기', hPost: POST_H * 0.72, postLabel: '더 낮게' });
+  drawBall(g, 205, 268, 13, 0.3);
+  drawBall(g, 425, 272, 9, 0.3);
+  label(ctx, '작은 공', 425, 300, { size: 11, bg: 'rgba(255,255,255,0)' });
+  caterpillar(g, 560, 230, { R: 13, fx: 1, fy: -0.3, look: ME, segs: 2 });
+  label(ctx, '어린이 · 다른 수준 경기는 바꿔서 해도 돼요', W / 2, 330, { size: 14 });
 }
 
 export const SCENES = {

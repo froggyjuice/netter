@@ -2,7 +2,6 @@
 // ctx: { hub, showToast, todayRule: { html(), setup() } }
 import { HUB_ERROR_TEXT } from './hub-client.js';
 import { CLUB_APP_URL } from '../config.js';
-import { GAMES } from '../games/registry.js';
 import { icon } from '../ui/lucide.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -19,22 +18,18 @@ export const BRAG_LABELS = Object.freeze({
   'pass-stars': '🧩 패스 퍼즐 별 전부',
 });
 
-const GAME_SUB = { snake: '포지션별 갈 수 있는 구역', rhythm: '골 서클 슈팅 타이밍', pass: '패스 길 찾기 퍼즐' };
-
 /** 🏠 홈 */
 export function renderHome(el, { hub, todayRule }) {
-  const games = GAMES.filter((g) => g.ready);
   el.innerHTML = `
     <section class="hero">
       <p class="smallcaps">NETTER PLAYGROUND</p>
       <h2 class="hero-title">넷볼 규칙, 게임으로 익혀요</h2>
       <p class="hero-sub">포지션 구역 · 3초 룰 · 골 서클 슈팅을 놀면서 배우는 연습장이에요.</p>
-      <a class="lime" href="#/snake">${icon('Gamepad2')} 바로 놀아 보기</a>
+      <a class="lime" href="#/snake">${icon('Gamepad2')} 게임하러가기!</a>
     </section>
     <div class="tiles">
-      ${games.map((g) => `<a class="tile" href="#/${g.id}"><span class="tile-ico" aria-hidden="true">${g.icon}</span><strong>${esc(g.title)}</strong><small>${GAME_SUB[g.id] ?? ''}</small></a>`).join('')}
       <a class="tile" href="#/board"><span class="tile-ico">${icon('Trophy', 22)}</span><strong>랭킹 · 댓글</strong><small>기록과 한마디</small></a>
-      <a class="tile wide" href="#/rules"><span class="tile-ico">${icon('BookOpen', 22)}</span><strong>넷볼 규칙 사전</strong><small>Rule 1~21 요약 · 근거 원문 · 형광펜</small></a>
+      <a class="tile" href="#/rules"><span class="tile-ico">${icon('BookOpen', 22)}</span><strong>넷볼 규칙 사전</strong><small>Rule 1~21 요약 · 근거 원문 · 형광펜</small></a>
     </div>
     ${todayRule.html()}
     <a class="paper club-card" href="${CLUB_APP_URL}" target="_blank" rel="noopener">
