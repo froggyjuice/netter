@@ -763,9 +763,9 @@ body[data-game='pass'] .stage-brief {
 }
 
 /* 맨 아래 쪽 번호: ‹ 1 2 3 4 5 › */
-.rule-pager { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 14px 0 0; }
+.rule-pager { display: flex; align-items: center; justify-content: center; gap: 2px; flex-wrap: wrap; margin: 14px 0 0; }
 .rule-pager .pg {
-  min-width: 36px; height: 36px; padding: 0 6px; border-radius: 999px; border: 2px solid transparent;
+  min-width: 32px; height: 36px; padding: 0 4px; border-radius: 999px; border: 2px solid transparent;
   background: transparent; color: var(--warm-ink); font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
 }
 .rule-pager .pg:hover:not(:disabled) { background: var(--paper-2); }

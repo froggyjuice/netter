@@ -690,8 +690,8 @@ async function setupLikes() {
   renderLikes();
 }
 
-// ---------- 넷볼 규칙 사전 (Rule 1~21 요약 · 5개씩 쪽 나누기 · 검색 · 연습 게임 연결) ----------
-const RULES_PER_PAGE = 5; // 한 쪽에 규칙 5개 (Rule 1~21 → 5쪽)
+// ---------- 넷볼 규칙 사전 (Rule 1~21 요약 · 3개씩 쪽 나누기 · 검색 · 연습 게임 연결) ----------
+const RULES_PER_PAGE = 3; // 한 쪽에 규칙 3개 (Rule 1~21 → 7쪽, 폰 세로 화면 기준)
 let rulesTurn = null; // 넷볼 규칙 사전이 열려 있을 때 쪽 넘기기
 let rulesOnSelect = null; // 넷볼 규칙 사전이 열려 있을 때 글자 고르기 → 형광펜 버튼
 document.addEventListener('selectionchange', () => rulesOnSelect?.());
@@ -991,17 +991,21 @@ function renderRulesPage(focusNo) {
     getSelection()?.removeAllRanges();
     hidePop();
   };
-  // 책장 가운데를 기준으로 오른쪽을 누르면 다음 쪽, 왼쪽을 누르면 이전 쪽 (링크 · 버튼 · 글자 고르기는 빼고)
+  // 책장 양쪽 가장자리(20%)를 누르면 쪽 넘기기 (링크 · 버튼 · 낱말 · 글자 고르기는 빼고)
+  // 책장 왼쪽 20%를 누르면 이전 쪽, 오른쪽 20%면 다음 쪽 (가운데는 넘기지 않는다)
+  const TURN_EDGE = 0.2;
   const sideOf = (e) => {
     const r = sheet.getBoundingClientRect();
-    return e.clientX - r.left < r.width / 2 ? -1 : 1;
+    const x = (e.clientX - r.left) / r.width;
+    return x < TURN_EDGE ? -1 : x > 1 - TURN_EDGE ? 1 : 0;
   };
   const canTurn = (d) => !$('#rule-pager').hidden && (d < 0 ? page > 0 : page < pages.length - 1);
   const onControl = (e) => e.target instanceof Element && e.target.closest('a, button, input, summary, details, mark.hl, .term');
   sheet.addEventListener('click', (e) => {
+    if (termBox && !termBox.hidden) return; // 낱말 풀이 상자를 닫는 클릭은 책장을 넘기지 않는다
     if (onControl(e) || String(getSelection?.() ?? '')) return;
     const d = sideOf(e);
-    if (canTurn(d)) showPage(page + d);
+    if (d && canTurn(d)) showPage(page + d);
   });
   els.intro.querySelectorAll('#rule-pager [data-page]').forEach((b) => b.addEventListener('click', () => showPage(Number(b.dataset.page))));
   $('#rule-prev').addEventListener('click', () => showPage(page - 1));
