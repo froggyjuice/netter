@@ -1,23 +1,24 @@
-// 동아리 허브 클라이언트: 로그인 세션(이 기기에 저장) · 서버 호출 · 놀이터 기록 저장 위치
+// 서버 호출: '회장에게 자랑하기' · 운영진 화면 (로그인 없음 — 회원은 동아리 앱이 맡는다)
 import { ApiError } from '../shared/api.js';
-import { collectSave, applySave, SAVE_KEYS } from '../shared/save-bundle.js';
 
-const SESSION_KEY = 'netball.session';
-const MODE_KEY = 'netball.saveMode'; // 'device' | 'account'
+const BRAGS_KEY = 'netball.bragIds'; // 이 기기에서 한 자랑 id (축하가 왔는지 보려고)
+const CHEERS_SEEN_KEY = 'netball.cheersSeen'; // 이 기기에서 이미 본 축하 id
+const NAME_KEY = 'netball.bragName'; // 자랑할 때 적은 이름 (다음에 다시 쓰려고)
 
 /** store: main.js 의 안전한 localStorage 래퍼 { get, set } */
 export function createHubClient(store) {
-  let session = null;
-  try {
-    const s = JSON.parse(store.get(SESSION_KEY) ?? 'null');
-    if (s?.token && s?.member?.name) session = s;
-  } catch {
-    session = null;
-  }
+  const ids = (key) => {
+    try {
+      const v = JSON.parse(store.get(key) ?? '[]');
+      return Array.isArray(v) ? v.filter(Number.isInteger) : [];
+    } catch {
+      return [];
+    }
+  };
+  const addId = (key, id) => store.set(key, JSON.stringify([...new Set([...ids(key), id])].slice(-20)));
 
   async function call(url, { method = 'GET', body, adminCode } = {}) {
     const headers = { 'Content-Type': 'application/json' };
-    if (session?.token) headers.Authorization = `Bearer ${session.token}`;
     if (adminCode) headers['x-admin-code'] = adminCode;
     let res;
     try {
@@ -31,113 +32,51 @@ export function createHubClient(store) {
     } catch {
       /* 본문 없음 */
     }
-    if (res.status === 401 && data?.error === 'not_logged_in') logout(); // 토큰이 만료됐거나 회원이 비활성화됨
     if (!res.ok) throw new ApiError(data?.error ?? 'server_error', res.status);
     return data;
   }
 
-  function logout() {
-    session = null;
-    store.set(SESSION_KEY, '');
-  }
-
   return {
-    get session() {
-      return session;
+    get bragName() {
+      return store.get(NAME_KEY) ?? '';
     },
-    isAdmin: () => session?.member?.role === 'admin',
-    async login(name, phone) {
-      const out = await call('/api/auth', { method: 'POST', body: { name, phone } });
-      session = { token: out.token, member: out.member };
-      store.set(SESSION_KEY, JSON.stringify(session));
-      return session.member;
-    },
-    logout,
-    /** 등록 안 된 이름 + 번호로 가입 승인 요청 → { ok, already } */
-    requestJoin: (name, phone, message) => call('/api/auth', { method: 'POST', body: { name, phone, join: true, message } }),
-    /** 서버의 내 정보로 이름·역할을 새로 고친다 */
-    async me() {
-      const out = await call('/api/me');
-      session = { ...session, member: out.member };
-      store.set(SESSION_KEY, JSON.stringify(session));
+    /** 🏆 회장에게 자랑하기 → { ok, id, already } */
+    async brag(name, kind) {
+      const out = await call('/api/brag', { method: 'POST', body: { name, kind } });
+      store.set(NAME_KEY, name.trim());
+      addId(BRAGS_KEY, out.id);
       return out;
     },
+    /** 이 기기에서 한 자랑 중 아직 안 본 축하 */
+    async newCheers() {
+      const mine = ids(BRAGS_KEY);
+      if (!mine.length) return [];
+      const seen = ids(CHEERS_SEEN_KEY);
+      return (await call(`/api/brag?ids=${mine.join(',')}`)).cheers.filter((c) => !seen.includes(c.id));
+    },
+    cheersSeen(list) {
+      for (const c of list) addId(CHEERS_SEEN_KEY, c.id);
+    },
 
-    // ----- 놀이터 기록 저장 위치 -----
-    get saveMode() {
-      return session && store.get(MODE_KEY) === 'account' ? 'account' : 'device';
-    },
-    setSaveMode(mode) {
-      store.set(MODE_KEY, mode === 'account' ? 'account' : 'device');
-    },
-    /** 이 기기 → 계정 */
-    async uploadSave() {
-      const save = collectSave((k) => store.get(k));
-      return call('/api/me', { method: 'PUT', body: { save } });
-    },
-    /** 계정 → 이 기기. 반환: 쓴 키 목록 (계정에 기록이 없으면 []) */
-    async downloadSave() {
-      const out = await call('/api/me');
-      return applySave(out.save?.data, (k, v) => store.set(k, v));
-    },
-    async accountSave() {
-      return (await call('/api/me')).save;
-    },
-    isSaveKey: (k) => SAVE_KEYS.includes(k),
-    /** 🏆 회장에게 자랑하기 → { ok, already } */
-    brag: (kind) => call('/api/me', { method: 'POST', body: { brag: kind } }),
-    // ----- 훈련 캘린더 -----
-    events: () => call('/api/events'),
-    eventAction: (body) => call('/api/events', { method: 'POST', body }),
-    /** 운영진이 보낸 축하를 봤다 */
-    cheersSeen: () => call('/api/me', { method: 'POST', body: { cheersSeen: true } }),
-
-    // ----- 운영진 -----
+    // ----- 운영진 (운영진 코드 하나) -----
     adminList: (code) => call('/api/admin', { adminCode: code }),
-    adminAdd: (code, member) => call('/api/admin', { method: 'POST', body: member, adminCode: code }),
-    adminUpdate: (code, patch) => call('/api/admin', { method: 'PATCH', body: patch, adminCode: code }),
-    /** 엑셀 일괄 등록 → { results: [{ ok, member | error }] } */
-    adminBulk: (code, members) => call('/api/admin', { method: 'POST', body: { members }, adminCode: code }),
-    /** 자랑 목록을 봤다 (홈 알림 끄기) */
     /** 자랑에 축하 보내기 (cheer: 한마디, 비우면 기본 문구) */
     adminCheer: (code, id, cheer) => call('/api/admin', { method: 'PATCH', body: { brag: id, cheer }, adminCode: code }),
+    /** 자랑 목록을 봤다 */
     adminBragsSeen: (code) => call('/api/admin', { method: 'PATCH', body: { bragsSeen: true }, adminCode: code }),
     /** 받은 메시지 처리: status 'new' | 'done', note (선택) */
     adminReport: (code, id, status, note) => call('/api/admin', { method: 'PATCH', body: { report: id, status, ...(note !== undefined ? { note } : {}) }, adminCode: code }),
-    /** 가입 요청: action 'approve' | 'reject' */
-    adminJoin: (code, id, action, role = 'member') => call('/api/admin', { method: 'PATCH', body: { join: id, action, role }, adminCode: code }),
   };
 }
 
 export const HUB_ERROR_TEXT = {
-  not_member: '등록된 회원이 아니에요. 이름과 전화번호를 확인하거나 운영진에게 등록을 부탁해 주세요.',
-  bad_login: '이름과 휴대폰 번호(010…)를 입력해 주세요.',
   too_fast: '잠시 뒤 다시 시도해 주세요.',
-  not_logged_in: '로그인이 풀렸어요. 다시 로그인해 주세요.',
-  not_admin: '운영진만 볼 수 있어요.',
   bad_admin_code: '운영진 코드가 맞지 않아요.',
   admin_not_configured: '서버에 운영진 코드가 아직 설정되지 않았어요.',
   storage_not_configured: '서버 저장소가 아직 설정되지 않았어요.',
-  duplicate_phone: '이미 등록된 전화번호예요.',
-  bad_member: '이름(20자까지)과 휴대폰 번호를 확인해 주세요.',
-  cannot_demote_self: '자기 자신은 운영진에서 빼거나 비활성화할 수 없어요.',
-  too_many: '한 번에 200명까지 등록할 수 있어요.',
-  save_too_large: '기록이 너무 커서 저장하지 못했어요.',
+  bad_name: '이름을 1~20자로 적어 주세요.',
   bad_brag: '자랑할 수 없는 항목이에요.',
-  vote_closed: '투표가 마감됐어요.',
-  poll_closed: '날짜 투표가 마감됐어요.',
-  poll_decided: '이미 날짜를 정한 투표예요.',
-  few_options: '후보 날짜를 2개 이상 넣어 주세요.',
-  many_options: '후보 날짜는 10개까지예요.',
-  bad_option: '후보를 골라 주세요.',
-  bad_semester: '학기 이름과 시작 · 끝 날짜를 확인해 주세요.',
-  no_attendees: '참석한 사람이 아직 없어요.',
-  bad_time: '날짜와 시간을 확인해 주세요. (끝은 시작보다 뒤여야 해요)',
-  bad_vote: '참석 · 불참 · 미정 중 하나를 골라 주세요.',
-  not_found: '일정을 찾지 못했어요. 새로고침해 주세요.',
-  already_member: '이미 등록된 회원이에요. 그대로 로그인해 주세요.',
-  join_done: '이미 처리된 가입 요청이에요.',
-  bad_join: '가입 요청을 처리하지 못했어요.',
+  not_found: '찾지 못했어요. 새로고침해 주세요.',
   bad_report: '메시지를 처리하지 못했어요.',
   network: '인터넷 연결을 확인해 주세요.',
 };

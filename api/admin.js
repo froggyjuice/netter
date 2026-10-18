@@ -1,4 +1,4 @@
-// Vercel 서버리스 함수: GET/POST/PATCH /api/admin (운영진: 회원 명단)
+// Vercel 서버리스 함수: GET/PATCH /api/admin (운영진 코드: 받은 메시지 · 자랑 목록)
 import { handleAdmin } from '../lib/hub-handler.js';
 
 export default async function handler(req, res) {

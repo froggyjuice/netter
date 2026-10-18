@@ -1,13 +1,11 @@
 // 허브: 탭 · 게임 설명 카드 · 시작 → 게임 → 결과/닉네임 등록 · 리더보드
-import './fonts.css';
 import './style.css';
 import { FONT } from './shared/theme.js';
 import { installErrorLogging } from './shared/error-log.js';
 import { createHubClient, HUB_ERROR_TEXT } from './hub/hub-client.js';
-import { renderHome, renderMe, renderAdmin } from './hub/hub-pages.js';
-import { renderCalendar } from './hub/calendar-page.js';
-import { SAVE_KEYS } from './shared/save-bundle.js';
-import { SITE_NAME } from './config.js';
+import { renderHome, renderAdmin } from './hub/hub-pages.js';
+import { SITE_NAME, CLUB_APP_URL } from './config.js';
+import { icon, hydrateIcons } from './ui/lucide.js';
 import { GAMES } from './games/registry.js';
 import { modeFor } from './games/snake-logic.js';
 import { createRuleLog } from './shared/rule-notes.js';
@@ -58,7 +56,6 @@ const touchQuery = matchMedia('(hover: none), (pointer: coarse)'); // style.css 
 document.body.dataset.orient = orientationNow();
 
 // localStorage 는 막혀 있을 수 있으므로 항상 try/catch
-let hubReady = false; // store.set 이 허브보다 먼저 불려도 안전하게
 const store = {
   get(key) {
     try {
@@ -73,20 +70,11 @@ const store = {
     } catch {
       /* 저장 못 해도 게임은 정상 동작 */
     }
-    if (SAVE_KEYS.includes(key)) scheduleAccountSave();
   },
 };
 
-// ---------- 동아리 허브: 로그인 · 놀이터 기록 계정 저장 ----------
+// ---------- 자랑하기 · 운영진 (로그인 없음: 회원 · 일정은 동아리 앱) ----------
 const hub = createHubClient(store);
-hubReady = true;
-let accountSaveTimer = 0;
-/** 계정 저장 모드면 기록이 바뀐 뒤 잠깐 모아서 한 번에 계정에 올린다 */
-function scheduleAccountSave() {
-  if (!hubReady || hub.saveMode !== 'account') return;
-  clearTimeout(accountSaveTimer);
-  accountSaveTimer = setTimeout(() => hub.uploadSave().catch(() => {}), 800);
-}
 
 const els = {
   tabs: $('#tabs'),
@@ -104,7 +92,7 @@ const els = {
 };
 
 document.title = SITE_NAME;
-$('#brand').textContent = `🏐 ${SITE_NAME}`;
+hydrateIcons();
 
 let current = GAMES[0];
 const RANDOM = 'RANDOM'; // 포지션·센터 모드의 '랜덤' 선택 (시작할 때 정해진다)
@@ -128,12 +116,6 @@ function stopHomeDemo() {
 // 리듬 슈팅: 슈터 GS·GA(공격) · 슈터를 막는 GK·GD(수비) 또는 넷 중 랜덤
 let rhythmPos = [...RHYTHM_POSITIONS, RANDOM].includes(store.get('netball.rpos')) ? store.get('netball.rpos') : 'GS';
 const isRhythm = () => current.id === 'rhythm';
-/** 계정에서 가져온 기록으로 화면의 기록 값을 다시 읽는다 */
-function reloadSaves() {
-  profile = parseProfile(store.get('netball.profile'));
-  passProgress = parseProgress(store.get('netball.pass'));
-  rhythmSave = parseRhythmSave(store.get('netball.rhythm'));
-}
 const isPass = () => current.id === 'pass';
 let passProgress = parseProgress(store.get('netball.pass')); // 패스 퍼즐 스테이지별 최고 별
 let rhythmMode = 'attack'; // 지금 경기의 모드 (GS·GA 공격 · GK·GD 수비)
@@ -235,8 +217,8 @@ function route() {
   const wasPlaying = !els.stage.hidden;
   stopGame();
   const id = location.hash.replace(/^#\/?/, '');
-  // 동아리 허브 화면: 홈 · 캘린더 · 내 정보 · 운영진 (주소가 없으면 홈)
-  const hubPage = id === '' || id === 'home' ? 'home' : ['calendar', 'me', 'admin'].includes(id) ? id : null;
+  // 허브 화면: 홈 · 운영진 (주소가 없으면 홈. 예전 캘린더 · 내 정보 주소도 홈으로)
+  const hubPage = ['', 'home', 'calendar', 'me'].includes(id) ? 'home' : id === 'admin' ? 'admin' : null;
   syncNav(hubPage ?? (id.startsWith('rules') ? 'rules' : 'play'));
   els.tabs.hidden = Boolean(hubPage) || id.startsWith('rules');
   // 위쪽 메뉴 바로 아래 한 줄: 놀이터 · 넷볼 규칙 사전
@@ -251,8 +233,8 @@ function route() {
     els.stage.hidden = true;
     els.intro.hidden = false;
     $('#btn-board').setAttribute('aria-current', 'false');
-    const ctx = { hub, showToast, onSavesChanged: reloadSaves, openLogin };
-    ({ home: renderHome, calendar: renderCalendar, me: renderMe, admin: renderAdmin })[hubPage](els.intro, ctx);
+    const ctx = { hub, showToast, todayRule: { html: todayRuleHtml, setup: () => setupTodayRule(null) } };
+    ({ home: renderHome, admin: renderAdmin })[hubPage](els.intro, ctx);
     window.scrollTo(0, 0);
     return;
   }
@@ -291,19 +273,18 @@ function syncNav(section) {
   document.querySelectorAll('#mainnav a').forEach((a) => a.setAttribute('aria-current', a.dataset.nav === section ? 'page' : 'false'));
 }
 
-// ---------- 화면 모드: ☀️ 밝게 · 🌙 어둡게 · 🐸 개구리 (이 기기에 저장, 처음엔 기기 설정을 따름) ----------
+// ---------- 화면 모드: 밝게 · 어둡게 (이 기기에 저장, 처음엔 기기 설정을 따름) ----------
 const THEMES = [
-  { id: 'light', icon: '☀️', name: '밝게', color: '#4a8559' },
-  { id: 'dark', icon: '🌙', name: '어둡게', color: '#24402b' },
-  { id: 'frog', icon: '🐸', name: '개구리', color: '#3f8f3a' },
+  { id: 'light', icon: 'Sun', name: '밝게', color: '#123322' },
+  { id: 'dark', icon: 'Moon', name: '어둡게', color: '#0c1f15' },
 ];
 function applyTheme(id, announce = false) {
   const t = THEMES.find((x) => x.id === id) ?? THEMES[0];
   document.documentElement.dataset.theme = t.id;
-  $('#btn-theme').textContent = t.icon;
+  $('#btn-theme').innerHTML = icon(t.icon);
   $('#btn-theme').setAttribute('aria-label', `화면 모드: ${t.name} (눌러서 바꾸기)`);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t.color);
-  if (announce) showToast(`${t.icon} ${t.name} 모드`, 'good', 1500);
+  if (announce) showToast(`${t.name} 모드`, 'good', 1500);
 }
 applyTheme(document.documentElement.dataset.theme);
 $('#btn-theme').addEventListener('click', () => {
@@ -311,83 +292,6 @@ $('#btn-theme').addEventListener('click', () => {
   const next = THEMES[(i + 1) % THEMES.length].id;
   store.set('netball.theme', next);
   applyTheme(next, true);
-});
-
-// 🐸 개구리 모드에서 제목 · 게임 탭 앞 이모지를 🍀로 바꿀 수 있게, 맨 앞 이모지를 <span class="ico"> 로 감싼다
-const LEAD_EMOJI = /^(\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*)\s*/u;
-function wrapLeadEmoji() {
-  document.querySelectorAll('h2, .tab').forEach((el) => {
-    const n = el.firstChild;
-    if (n?.nodeType !== Node.TEXT_NODE) return;
-    const m = LEAD_EMOJI.exec(n.data);
-    if (!m) return;
-    const ico = Object.assign(document.createElement('span'), { className: 'ico', textContent: m[1] });
-    n.data = ' ' + n.data.slice(m[0].length);
-    el.insertBefore(ico, n);
-  });
-}
-let wrapQueued = false;
-new MutationObserver(() => {
-  if (wrapQueued) return;
-  wrapQueued = true;
-  setTimeout(() => {
-    wrapQueued = false;
-    wrapLeadEmoji();
-  }, 0);
-}).observe(document.body, { childList: true, subtree: true });
-
-// ---------- 로그인 ----------
-const loginDialog = $('#login-dialog');
-/** 위쪽 버튼: 로그인 전 '🔑 로그인', 로그인 후 '👤 이름' (내 정보로) */
-function syncLoginButton() {
-  const me = hub.session?.member;
-  $('#btn-login').textContent = me ? `👤 ${me.name}` : '🔑 로그인';
-}
-function openLogin() {
-  $('#login-msg').textContent = '';
-  $('#join-box').hidden = true;
-  $('#login-send').disabled = false;
-  if (typeof loginDialog.showModal === 'function') loginDialog.showModal();
-  $('#login-name').focus();
-}
-$('#btn-login').addEventListener('click', () => {
-  if (hub.session) location.hash = '#/me';
-  else openLogin();
-});
-$('#login-cancel').addEventListener('click', () => loginDialog.close());
-$('#login-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  $('#login-send').disabled = true;
-  $('#login-msg').textContent = '확인 중…';
-  try {
-    const me = await hub.login($('#login-name').value, $('#login-phone').value);
-    loginDialog.close();
-    syncLoginButton();
-    showToast(`👋 ${me.name}님, 반가워요!`, 'good');
-    route(); // 지금 화면을 로그인 상태로 다시 그린다
-  } catch (err) {
-    $('#login-msg').textContent = HUB_ERROR_TEXT[err.code] ?? '로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요.';
-    $('#login-send').disabled = false;
-    // 등록 안 된 사람이면 가입 승인 요청을 보낼 수 있게
-    $('#join-box').hidden = err.code !== 'not_member';
-    $('#join-send').disabled = false;
-  }
-});
-$('#join-send').addEventListener('click', async () => {
-  $('#join-send').disabled = true;
-  try {
-    const out = await hub.requestJoin($('#login-name').value, $('#login-phone').value, $('#join-message').value);
-    $('#join-box').hidden = true;
-    $('#login-msg').textContent = out.already
-      ? '📝 요청을 새 내용으로 다시 보냈어요. 운영진이 승인하면 이 이름 + 번호로 로그인할 수 있어요.'
-      : '📝 가입 승인 요청을 보냈어요! 운영진이 승인하면 이 이름 + 번호로 로그인할 수 있어요.';
-  } catch (err) {
-    $('#login-msg').textContent = HUB_ERROR_TEXT[err.code] ?? '요청을 보내지 못했어요. 잠시 뒤 다시 시도해 주세요.';
-    $('#join-send').disabled = false;
-  }
-});
-window.addEventListener('storage', (e) => {
-  if (e.key === 'netball.session') syncLoginButton(); // 다른 탭에서 로그인·로그아웃
 });
 
 // ---------- 규칙 설명 (소개 카드와 일시정지 화면이 함께 쓴다) ----------
@@ -842,7 +746,7 @@ function renderRulesPage(focusNo) {
       <a class="btn small help-btn" href="${OFFICIAL_RULES_URL}" target="_blank" rel="noopener">🌐 공식 규정집 보기</a>
     </div>
     ${todayRuleHtml()}
-    <p class="hl-tip small muted">🖍️ 글자를 드래그해서(폰은 길게 눌러) 고르면 형광펜으로 칠할 수 있어요. 칠한 곳을 누르면 지워요. ${hub.saveMode === 'account' ? '내 계정에 저장돼요.' : '이 기기에 저장돼요.'}</p>
+    <p class="hl-tip small muted">🖍️ 글자를 드래그해서(폰은 길게 눌러) 고르면 형광펜으로 칠할 수 있어요. 칠한 곳을 누르면 지워요. 이 기기에 저장돼요.</p>
     <input class="rule-search" id="rule-search" type="search" placeholder="🔍 찾기 — 예) 3초, 오프사이드, 페널티 패스" aria-label="규칙 찾기" />
     <div class="book" id="book">
       <div class="book-page" id="book-page">
@@ -1105,7 +1009,7 @@ ${today.text}
   }
 }
 
-// ---------- 🏆 회장에게 자랑하기 (배지 · 별을 모두 모았을 때 → 운영진 화면에 보인다) ----------
+// ---------- 🏆 회장에게 자랑하기 (배지 · 별을 모두 모았을 때, 이름만 적어서 → 운영진 화면에 보인다) ----------
 const BRAGGED_KEY = 'netball.bragged'; // 이 기기에서 이미 자랑한 것
 const bragged = () => {
   try {
@@ -1115,26 +1019,26 @@ const bragged = () => {
     return [];
   }
 };
+const escAttr = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 function bragHtml(kind, complete) {
   if (!complete) return '';
-  const done = bragged().includes(kind);
-  return `<div class="brag"><p>🎉 모두 모았어요! 대단해요</p>
-    <button type="button" class="btn brag-btn" data-brag="${kind}" ${done ? 'disabled' : ''}>${done ? '✅ 회장님께 자랑했어요' : '🏆 회장에게 자랑하기!'}</button></div>`;
+  if (bragged().includes(kind)) return '<div class="brag"><p>🎉 모두 모았어요! 대단해요</p><button type="button" class="btn brag-btn" disabled>✅ 회장님께 자랑했어요</button></div>';
+  return `<form class="brag" data-brag-form="${kind}"><p>🎉 모두 모았어요! 대단해요</p>
+    <div class="row brag-row"><input class="brag-name" maxlength="20" required placeholder="내 이름" aria-label="자랑할 때 적을 이름" value="${escAttr(hub.bragName)}" />
+    <button type="submit" class="btn brag-btn">🏆 회장에게 자랑하기!</button></div></form>`;
 }
-els.intro.addEventListener('click', async (e) => {
-  const btn = e.target instanceof Element ? e.target.closest('[data-brag]') : null;
-  if (!btn || btn.disabled) return;
-  if (!hub.session) {
-    showToast('로그인하면 회장님께 자랑할 수 있어요 🔑');
-    openLogin();
-    return;
-  }
+els.intro.addEventListener('submit', async (e) => {
+  const form = e.target instanceof Element ? e.target.closest('[data-brag-form]') : null;
+  if (!form) return;
+  e.preventDefault();
+  const kind = form.dataset.bragForm;
+  const btn = form.querySelector('.brag-btn');
   btn.disabled = true;
   try {
-    const out = await hub.brag(btn.dataset.brag);
-    store.set(BRAGGED_KEY, JSON.stringify([...new Set([...bragged(), btn.dataset.brag])]));
-    btn.textContent = '✅ 회장님께 자랑했어요';
-    showToast(out.already ? '이미 자랑했어요. 회장님이 알고 계세요 😊' : '회장님께 자랑했어요! 🎉', 'good');
+    const out = await hub.brag(form.querySelector('.brag-name').value, kind);
+    store.set(BRAGGED_KEY, JSON.stringify([...new Set([...bragged(), kind])]));
+    form.querySelector('.brag-row').outerHTML = '<button type="button" class="btn brag-btn" disabled>✅ 회장님께 자랑했어요</button>';
+    showToast(out.already ? '이미 자랑했어요. 회장님이 알고 계세요 😊' : '회장님께 자랑했어요! 🎉 축하가 오면 홈에서 보여요', 'good');
   } catch (err) {
     btn.disabled = false;
     showToast(HUB_ERROR_TEXT[err?.code] ?? '잠시 뒤 다시 시도해 주세요.', 'bad');
@@ -2109,20 +2013,4 @@ $('#report-form').addEventListener('submit', async (e) => {
 });
 
 setupInstall({ installBtn: $('#btn-install'), helpDialog: $('#install-help'), fullscreenBtn: $('#btn-fullscreen') });
-syncLoginButton();
 route();
-if (hub.session) {
-  // 이름·역할이 바뀌었을 수 있으니 새로 받고, 계정 저장 모드면 계정 기록을 이 기기로
-  (async () => {
-    try {
-      await hub.me();
-      if (hub.saveMode === 'account' && (await hub.downloadSave()).length) {
-        reloadSaves();
-        if (!els.intro.hidden && document.body.dataset.page !== 'hub') renderIntro();
-      }
-    } catch {
-      /* 오프라인 등: 이 기기 기록으로 계속 */
-    }
-    syncLoginButton();
-  })();
-}

@@ -9,7 +9,7 @@ const W = 420;
 const H = 200;
 const PRACTICE_DIST = 3; // 공격 연습: 골대에서 3m 슛으로 판정
 const GRADE_TEXT = { perfect: 'Perfect!', great: 'Great!', good: 'Good', miss: 'Miss' };
-const GRADE_COLOR = { perfect: '#c0613a', great: '#3f63a8', good: '#4a8559', miss: '#6b7280' };
+const GRADE_COLOR = { perfect: '#c0613a', great: '#3f63a8', good: '#2e6f4f', miss: '#6b7280' };
 const KEY_ACT = { ArrowUp: 'up', KeyW: 'up', KeyJ: 'up', Enter: 'up', ArrowDown: 'down', KeyS: 'down', KeyK: 'down' };
 
 /**

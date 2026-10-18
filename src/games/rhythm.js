@@ -27,7 +27,7 @@ const KEY_ACTION = {
 };
 
 const GRADE_TEXT = { perfect: 'Perfect!', great: 'Great!', good: 'Good', miss: 'Miss' };
-const GRADE_COLOR = { perfect: '#c0613a', great: '#3f63a8', good: '#4a8559', miss: '#6b7280' };
+const GRADE_COLOR = { perfect: '#c0613a', great: '#3f63a8', good: '#2e6f4f', miss: '#6b7280' };
 const BIB = { bg: THEME.bibAttack, ink: '#ffffff' }; // 공격 포지션 조끼 (존 스네이크와 같은 진한 초록)
 const BIB_DEF = { bg: THEME.bibDefence, ink: '#2f5233' }; // 수비 포지션 조끼 (연한 초록)
 const STOP_TEXT = { perfect: '0.9m Perfect!', great: '0.9m Great!', good: '0.9m Good', far: '너무 멀어요' };
@@ -283,7 +283,7 @@ export function startRhythm({ parent, position, difficulty = 'normal', hooks = {
         } else if (ev.type === 'catch') {
           const p = px(ev.at);
           if (ev.penalty) this.popText(p.x, p.y - 26, '페널티 패스!', '#3f63a8');
-          else if (ev.line === 'on') this.popText(p.x, p.y - 26, '선 위 = 서클 안!', '#4a8559');
+          else if (ev.line === 'on') this.popText(p.x, p.y - 26, '선 위 = 서클 안!', '#2e6f4f');
           else if (ev.line === 'out') this.popText(p.x, p.y - 26, '선 밖에서 잡음!', '#b54a4a');
           else if (!ev.inCircle) this.popText(p.x, p.y - 26, '서클 밖!', '#b54a4a');
           hooks.onCatch?.(ev);

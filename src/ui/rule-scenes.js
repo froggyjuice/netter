@@ -680,7 +680,7 @@ export function drawRuleScene(canvas, name) {
   ctx.textAlign = 'right';
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = 'rgba(58,58,54,0.5)';
-  ctx.fillText('🏐 Netter', W - 12, H - 10);
+  ctx.fillText('NETTER 놀이터', W - 12, H - 10);
   return true;
 }
 

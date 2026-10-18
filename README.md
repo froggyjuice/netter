@@ -1,6 +1,7 @@
-# Netter — 네터인을 위한 훈련 도우미 (비공식)
+# NETTER 놀이터 — 넷볼 규칙 게임 · 규칙 사전 (비공식)
 
-네터(netter)를 위한 넷볼 규칙 학습용 웹 미니게임 허브입니다.
+NETTER 넷볼 동아리를 위한 넷볼 규칙 학습용 웹 미니게임 놀이터입니다. 로그인 없이 누구나 씁니다.
+회원 · 훈련 일정 · 참석 투표 · 공지 · 건의는 **동아리 앱**(https://netter-app-one.vercel.app/, 별도 저장소)이 맡고, 놀이터는 메뉴의 링크와 같은 디자인(색 · 글꼴 · 로고)으로 이어집니다.
 규칙은 World Netball「Rules of Netball」2024를 직접 풀어 구현했습니다. (규정집 원문·PDF는 저장소에 넣지 않습니다)
 
 ## 무엇이 들어 있나
@@ -10,10 +11,10 @@
 | 🐍 **존 스네이크** | 포지션별 구역 · 오프사이드 · 3초 · 센터 패스 · 장애/접촉 · 페널티 패스 · 4쿼터와 진영 교대 | 랭킹 + 배지 |
 | 🎯 **리듬 슈팅** | 공격(GS·GA): 골 서클 안에서만 슛 · 3초 · 리바운드 · 슛 방해 / 수비(GK·GD): 0.9m · 정당한 블록 | 랭킹 + 최고 기록(공격·수비 모드별) + 배지 |
 | 🧩 **패스 퍼즐** | 숏 패스 · 서드 건너뛰기 · 오프사이드 · 풋워크(피벗) · 3초 — 7챕터 18스테이지 | 별 진행도 |
-| 📖 **넷볼 규칙 사전** | 📌 오늘의 규칙 한 줄(매일 바뀜 · 애벌레 장면 · 카톡 공유), Rule 1~21 요약(5개씩 5쪽, 줄마다 📜 근거 조항·쪽·핵심 구절), 🖍️ 형광펜(이 기기/계정 저장), 찾기, 규칙마다 연습 게임 연결 | — |
+| 📖 **넷볼 규칙 사전** | 📌 오늘의 규칙 한 줄(매일 바뀜 · 애벌레 장면 · 카톡 공유), Rule 1~21 요약(5개씩 5쪽, 줄마다 📜 근거 조항·쪽·핵심 구절), 🖍️ 형광펜(이 기기에 저장), 찾기, 규칙마다 연습 게임 연결 | — |
 | 🛠️ 개발 중 | 휘슬을 불어라 · 라인 저지 & 스로인 · 스텝 마스터 (계획 · 미리보기 · ❤️ 좋아요로 개발 순서 정하기) | — |
 
-그 밖에: 📅 훈련 캘린더(운영진이 일정 만들기 · 참석 투표 · 희망 포지션 · 인원 확정 후 포지션 랜덤 배정 · 내 캘린더 추가 · 취소/변경 홈 배너 · 카톡 문구), 화면 모드(☀️ 밝게 · 🌙 어둡게 · 🐸 개구리), 리듬 슈팅 박자에 맞춘 배경음악, 홈에서 맛보기(존 스네이크) · 타이밍 연습(리듬 슈팅), 경기 후 규칙 복습(규칙 사전 링크), 랭킹·댓글, 오류·아이디어 보내기(💬 메시지), 홈 화면에 설치(PWA).
+그 밖에: 화면 모드(밝게 · 어둡게), 리듬 슈팅 박자에 맞춘 배경음악, 맛보기(존 스네이크) · 타이밍 연습(리듬 슈팅), 경기 후 규칙 복습(규칙 사전 링크), 랭킹·댓글, 🏆 회장에게 자랑하기(이름만 적기), 💬 오류 · 의견 보내기, 운영진 화면(운영진 코드), 홈 화면에 설치(PWA).
 배지·최고 기록·별은 **이 기기의 브라우저**(localStorage)에 저장됩니다.
 
 ## 기술
@@ -22,23 +23,24 @@
 - 백엔드: Vercel 서버리스 함수 `api/*.js` → `lib/*-handler.js` → Supabase(Postgres, service_role 키로 서버에서만 접근)
 - 로컬: Supabase 없이 `.data/*.json` 파일에 저장 (`npm run dev` 가 `/api/*` 도 같은 로직으로 처리)
 - 규칙 로직은 화면과 분리한 순수 함수(`*-logic.js`)이고 `node:test` 로 검사합니다.
-- 글꼴: 본문 고운돋움 · 굵은 글씨(제목 · 버튼) 주아 (둘 다 OFL, `@fontsource` 로 사이트에 함께 묶어 외부 서버 없이). 한 이름 `Netter` 로 합친 `src/fonts.css` 는 `node scripts/make-fonts.mjs` 로 만듭니다.
+- 디자인: 동아리 앱과 같게 — 딥그린 `#123322` · 라임 `#c7ec83` · 크림 `#f7f8f4`, 시스템 글꼴(애플 SD 고딕 / 맑은 고딕), lucide 선 아이콘, 폰은 아래쪽 탭 메뉴.
+- 로고 · 파비콘 · 앱 아이콘 · 공유 미리보기(OG)는 동아리 로고로 `python scripts/make_brand.py <동아리 로고 jpg>` 가 만듭니다.
 
 ## 1. 로컬 실행
 
 ```bash
 npm install
 npm run dev        # http://localhost:5173  (같은 와이파이의 폰에서는 터미널에 뜨는 Network 주소)
-npm test           # 규칙·로직·API 단위 테스트 (209개)
+npm test           # 규칙·로직·API 단위 테스트 (213개)
 npm run build      # 배포용 빌드 확인
 ```
 
-로컬 데이터는 `.data/` 의 `scores.json` · `comments.json` · `reports.json` · `likes.json` 에 쌓이고, 지우면 초기화됩니다. (git에는 올라가지 않습니다)
+로컬 데이터는 `.data/` 의 `scores.json` · `comments.json` · `reports.json` · `likes.json` · `brags.json` 에 쌓이고, 지우면 초기화됩니다. (git에는 올라가지 않습니다)
 
 ## 2. Supabase 준비 (배포 전 1회)
 
 1. supabase.com 에서 새 프로젝트 생성
-2. **SQL Editor** 에 `supabase/schema.sql` 내용을 붙여넣고 Run → `scores` · `reports` · `comments` · `likes` · `client_errors` · `members` · `play_saves` 테이블이 생깁니다
+2. **SQL Editor** 에 `supabase/schema.sql` 내용을 붙여넣고 Run → `scores` · `reports` · `comments` · `likes` · `client_errors` · `brags` 테이블이 생깁니다
 3. **Project Settings → API** 에서 두 값을 복사
    - `Project URL` → `SUPABASE_URL`
    - `service_role` 키 → `SUPABASE_SERVICE_KEY` (**비밀 키**: 코드·GitHub·채팅에 노출 금지, `VITE_` 접두사도 금지)
@@ -55,7 +57,7 @@ npm run build      # 배포용 빌드 확인
    git push -u origin main
    ```
 2. vercel.com → **Add New → Project** → 저장소 Import (Framework: Vite 자동 인식)
-3. **Environment Variables** 에 `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, 그리고 동아리 허브용 `SESSION_SECRET`(긴 무작위 문자열) · `ADMIN_CODE`(운영진 화면 코드) 등록 → **Deploy**
+3. **Environment Variables** 에 `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, 그리고 `ADMIN_CODE`(운영진 화면을 여는 코드) 등록 → **Deploy**
 4. 배포 주소에서 점검: 한 판 하고 닉네임 등록(→ Table Editor `scores`), 댓글 · 신고 · 개발 중 게임 ❤️ 좋아요
 
 환경변수를 빼먹으면 랭킹이 "서버의 점수 저장소가 아직 설정되지 않았어요"라고 안내합니다.
@@ -63,11 +65,10 @@ npm run build      # 배포용 빌드 확인
 
 ### 운영 메모
 
-- **첫 운영진 등록**(한 번): SQL Editor 에서 `insert into public.members (name, phone, role) values ('이름', '01012345678', 'admin');` → 그 이름 + 전화번호로 로그인 → 👤 → ⚙️ 운영진 화면(운영진 코드 입력)에서 나머지 회원 등록
-- **회원 일괄 등록**: 운영진 화면 → 📥 엑셀로 한꺼번에 등록. 이름 · 전화번호 · 역할(비우면 회원) 칸의 .xlsx/.csv 파일을 올리거나 엑셀 표를 복사해 붙여넣기 → 미리보기에서 확인 후 등록(한 번에 200명, 이미 등록된 번호는 건너뜀)
-- **🏆 회장에게 자랑하기**: 존 스네이크 · 리듬 슈팅 배지를 모두 모으거나 패스 퍼즐 별을 모두 따면 버튼이 생겨요(로그인 회원). 운영진 화면 맨 위 "자랑 목록"과 운영진 홈 알림으로 보입니다. 처음 한 번 SQL Editor 에서 `schema.sql` 의 `brags` 테이블을 만들어 주세요.
-- **💬 받은 메시지 · 📝 가입 승인 요청**: 운영진 화면에서 오류·아이디어를 처리 완료(메모) 하고, 등록 안 된 사람의 가입 요청을 승인·거절해요. 처음 한 번 `schema.sql` 의 `join_requests` 테이블과 `reports` 상태 칸(alter table) 부분을 실행해 주세요.
-- **동아리 허브 로그인**: 운영진이 등록한 이름 + 전화번호로 바로 로그인(메일 인증 없음). 연락처는 운영진 화면에서만 보입니다.
+- **운영진 화면**: 아래쪽 '운영진' 링크(`#/admin`) → 운영진 코드(`ADMIN_CODE`) 입력. 로그인은 없고, 코드를 아는 사람이 운영진입니다. 운영진이 바뀌면 Vercel 에서 코드만 바꾸세요.
+- **🏆 회장에게 자랑하기**: 존 스네이크 · 리듬 슈팅 배지를 모두 모으거나 패스 퍼즐 별을 모두 따면, 이름을 적고 자랑할 수 있어요(같은 이름 · 같은 종류는 한 번). 운영진 화면 "자랑 목록"에서 🎉 축하를 보내면, 자랑한 기기의 홈에 보입니다.
+- **💬 받은 메시지**: 운영진 화면에서 오류 · 의견을 처리 완료(메모) 해요. 동아리 운영 건의는 동아리 앱으로 안내합니다.
+- 처음 한 번 SQL Editor 에서 `schema.sql` 의 "자랑하기 · 받은 메시지 처리" 부분을 실행해 주세요. 예전 허브용 테이블(members · events 등)은 더 쓰지 않습니다.
 
 - **댓글 숨기기**: Supabase Table Editor → `comments` 에서 `hidden` 을 체크하면 목록에서 사라집니다.
 - **신고 보기**: Table Editor → `reports` (이름·연락처·IP는 저장하지 않습니다)
@@ -85,10 +86,10 @@ src/games/snake.js · rhythm.js · pass.js    Phaser 화면/입력
 src/games/pass-stages.js   패스 퍼즐 챕터·스테이지 데이터
 src/shared/zones.js        ★ 포지션별 이동 구역 (모든 게임이 공유하는 단일 규칙 출처)
 src/shared/rulebook.js     넷볼 규칙 사전 (Rule 1~21 요약)    rule-notes.js  경기 후 '규칙 복습'
-src/shared/theme.js        파스텔 색상 팔레트 (CSS 변수는 src/style.css :root)
-src/hub/                   동아리 허브: 로그인 세션 · 서버 호출(hub-client) · 홈/캘린더/내 정보/운영진 화면(hub-pages)
+src/shared/theme.js        게임 색상 · 글꼴 (CSS 변수는 src/style.css :root)
+src/hub/                   서버 호출(hub-client: 자랑하기 · 운영진) · 홈/운영진 화면(hub-pages)
 src/ui/                    화면 조각 (리듬·패스 UI, 맛보기·연습, 규칙 링크, 개발 중 미리보기, 랭킹·댓글 …)
-api/*.js                   Vercel 함수 (score · report · comments · likes · log · auth · me · admin, 얇은 어댑터)
+api/*.js                   Vercel 함수 (score · report · comments · likes · log · brag · admin, 얇은 어댑터)
 lib/*-handler.js           요청 검증·처리   lib/*-store.js  Supabase / 파일 / 메모리 저장소
 supabase/schema.sql        DB 테이블
 test/                      단위 테스트
@@ -104,6 +105,5 @@ test/                      단위 테스트
 
 ## 6. 다음 단계
 
-1. ✅ 배포 · 오류 자동 기록 · 허브 1단계(명단 · 이름+전화번호 로그인 · 놀이터 기록 계정 저장)
-2. **동아리 허브** 다음 단계: 훈련 캘린더(캘린더 추가 버튼) → 일정별 참석 투표와 포지션 랜덤 배정 → 날짜 정하기 투표 → 공유 링크 · 출석 순위
-3. 개발 중 게임: ❤️ 좋아요가 많은 순서대로
+1. ✅ 배포 · 오류 자동 기록 · 동아리 앱과 역할 나누기(회원 · 일정은 동아리 앱) · 디자인 통일
+2. 개발 중 게임: ❤️ 좋아요가 많은 순서대로

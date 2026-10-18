@@ -11,8 +11,7 @@
     "test": "node --test \"test/*.test.js\""
   },
   "dependencies": {
-    "@fontsource/gowun-dodum": "^5.3.0",
-    "@fontsource/jua": "^5.3.0",
+    "lucide": "^0.468.0",
     "phaser": "^3.90.0"
   },
   "devDependencies": {

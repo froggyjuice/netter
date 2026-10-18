@@ -7,10 +7,8 @@ const ROUTES = {
   '/api/comments': ['/lib/comment-handler.js', 'handleComments'],
   '/api/likes': ['/lib/like-handler.js', 'handleLikes'],
   '/api/log': ['/lib/log-handler.js', 'handleLog'],
-  '/api/auth': ['/lib/hub-handler.js', 'handleAuth'],
-  '/api/me': ['/lib/hub-handler.js', 'handleMe'],
+  '/api/brag': ['/lib/hub-handler.js', 'handleBrag'],
   '/api/admin': ['/lib/hub-handler.js', 'handleAdmin'],
-  '/api/events': ['/lib/event-handler.js', 'handleEvents'],
 };
 
 function devApi(mode) {
@@ -39,7 +37,7 @@ function devApi(mode) {
               query: Object.fromEntries(url.searchParams),
               body,
               ip: req.socket.remoteAddress ?? 'local',
-              headers: req.headers, // 로그인 토큰 · 운영진 코드
+              headers: req.headers, // 운영진 코드
             });
             res.statusCode = out.status;
             res.setHeader('Content-Type', 'application/json');
