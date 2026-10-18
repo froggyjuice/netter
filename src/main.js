@@ -52,8 +52,8 @@ const errorLog = installErrorLogging({
   }),
 });
 
-// 폰을 세로로 들고 있으면 코트도 세로로 그린다 (터치 기기에서만. PC 창은 항상 가로)
-const portraitQuery = matchMedia('(orientation: portrait) and (hover: none), (orientation: portrait) and (pointer: coarse)');
+// 화면이 세로면(폰을 세로로 · PC 창의 세로 틀) 코트도 세로로 그린다. 존 스네이크 · 패스 퍼즐 · 미니 코트 모두
+const portraitQuery = matchMedia('(orientation: portrait)');
 const orientationNow = () => (portraitQuery.matches ? 'portrait' : 'landscape');
 const touchQuery = matchMedia('(hover: none), (pointer: coarse)'); // style.css 의 폰 전용 규칙과 같은 조건
 document.body.dataset.orient = orientationNow();

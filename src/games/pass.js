@@ -141,7 +141,8 @@ export function startPass({ parent, stageId, orientation = 'landscape', hooks = 
       this.fxG = this.add.graphics().setDepth(6);
       this.labels = [];
       this.thirdTexts = [0, 1, 2].map((t) => {
-        const p = at(t * 10 + 5, 0.75);
+        // 세로 화면에서는 코트 폭이 화면 가로가 되므로, 글자가 왼쪽 가장자리에서 잘리지 않게 조금 더 안쪽에
+        const p = at(t * 10 + 5, view.orientation === 'portrait' ? 1.6 : 0.75);
         return this.add
           .text(p.x, p.y, THIRD_NAMES[t], { fontFamily: FONT, fontSize: '13px', fontStyle: 'bold', color: hex(THEME.ink) })
           .setOrigin(0.5)
