@@ -18,6 +18,7 @@ import { setupInstall } from './ui/install.js';
 import { RULEBOOK, OFFICIAL_RULES_URL, searchRules, chapterOf } from './shared/rulebook.js';
 import { HIGHLIGHT_KEY, parseHighlights, addHighlight, removeHighlight, markedHtml, lineKey } from './shared/highlights.js';
 import { linkifyRules } from './ui/rule-links.js';
+import { GLOSSARY, wrapTerms } from './shared/glossary.js';
 import { drawDevPreview } from './ui/dev-preview.js';
 import { drawRuleSceneReady } from './ui/rule-scenes.js';
 import { ruleOfDay, dayLabel } from './shared/daily-rule.js';
@@ -216,6 +217,7 @@ const PLAY_TAGLINE = '넷볼 규칙을 게임으로 재미있게 배워봐요! o
 const RULES_TAGLINE = 'World Netball「Rules of Netball」2024를 AI가 풀어 쓴 요약이에요. 정확한 원문은 공식 사이트(영문, 무료)에서 확인하세요. ٩(•᎑•)✦';
 function route() {
   if (hlPop) hlPop.hidden = true; // 다른 화면으로 가면 형광펜 버튼 닫기
+  closeTerm();
   const wasPlaying = !els.stage.hidden;
   stopGame();
   const id = location.hash.replace(/^#\/?/, '');
@@ -696,6 +698,35 @@ document.addEventListener('selectionchange', () => rulesOnSelect?.());
 const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 /** 형광펜 버튼 (칠하기 · 지우기): 페이지에 하나만 두고 글자 아래에 띄운다 */
 let hlPop = null;
+// 규칙 사전 글자 크기 (CSS --rule-scale): 기본 0.6, 0.4~1.2
+const RULE_SCALE = Object.freeze({ def: 0.6, min: 0.4, max: 1.2, step: 0.1 });
+const RULE_SCALE_KEY = 'netball.ruleScale';
+const ruleScale = () => {
+  const v = Number(store.get(RULE_SCALE_KEY));
+  return Number.isFinite(v) && v >= RULE_SCALE.min && v <= RULE_SCALE.max ? v : RULE_SCALE.def;
+};
+function setRuleScale(v) {
+  const c = Math.round(Math.min(RULE_SCALE.max, Math.max(RULE_SCALE.min, v)) * 10) / 10;
+  store.set(RULE_SCALE_KEY, String(c));
+  document.documentElement.style.setProperty('--rule-scale', String(c));
+}
+document.documentElement.style.setProperty('--rule-scale', String(ruleScale()));
+// 낱말 풀이 상자 (하나를 같이 쓴다): 상자 밖을 누르거나 스크롤 · 화면을 바꾸면 닫힌다
+let termBox = null;
+function termPop() {
+  if (!termBox) {
+    termBox = Object.assign(document.createElement('div'), { className: 'term-pop', hidden: true });
+    termBox.setAttribute('role', 'dialog');
+    document.body.append(termBox);
+  }
+  return termBox;
+}
+const closeTerm = () => termBox && (termBox.hidden = true);
+document.addEventListener('click', (e) => {
+  if (termBox && !termBox.hidden && !(e.target instanceof Element && e.target.closest('.term-pop'))) closeTerm();
+});
+document.addEventListener('keydown', (e) => e.key === 'Escape' && closeTerm());
+scroller.addEventListener('scroll', closeTerm, { passive: true });
 scroller.addEventListener('scroll', () => hlPop && (hlPop.hidden = true), { passive: true });
 function highlightPop() {
   if (!hlPop) {
@@ -722,7 +753,7 @@ function renderRulesPage(focusNo) {
   };
   // 형광펜: 이 기기 / 계정(로그인 + 계정 저장)에 놀이터 기록과 함께 저장
   let marks = parseHighlights(store.get(HIGHLIGHT_KEY));
-  const lineHtml = (r, i) => markedHtml(r.points[i].t, marks[lineKey(r.no, i)], escHtml);
+  const lineHtml = (r, i) => wrapTerms(markedHtml(r.points[i].t, marks[lineKey(r.no, i)], escHtml));
   const card = (r) => `
     <article class="rule-card" id="rule-${r.no}">
       <h3><span class="rule-no">Rule ${r.no}</span> ${r.title}</h3>
@@ -750,7 +781,13 @@ function renderRulesPage(focusNo) {
     </div>
     ${todayRuleHtml()}
     <p class="hl-tip small muted">🖍️ 글자를 드래그해서(폰은 길게 눌러) 고르면 형광펜으로 칠할 수 있어요. 칠한 곳을 누르면 지워요. 이 기기에 저장돼요.</p>
-    <input class="rule-search" id="rule-search" type="search" placeholder="🔍 찾기 — 예) 3초, 오프사이드, 페널티 패스" aria-label="규칙 찾기" />
+    <div class="rule-tools">
+      <input class="rule-search" id="rule-search" type="search" placeholder="🔍 찾기 — 예) 3초, 오프사이드, 페널티 패스" aria-label="규칙 찾기" />
+      <div class="font-step" role="group" aria-label="규칙 글자 크기">
+        <button type="button" class="btn small" data-fs="-1" aria-label="글자 작게">가−</button>
+        <button type="button" class="btn small" data-fs="1" aria-label="글자 크게">가+</button>
+      </div>
+    </div>
     <div class="book" id="book">
       <div class="book-page" id="book-page">
         <div class="rule-list" id="rule-list"></div>
@@ -848,6 +885,47 @@ function renderRulesPage(focusNo) {
   });
   rulesTurn = (d) => showPage(page + d); // ← → 키 (아래 keydown)
 
+  // ----- 글자 크기 (가− · 가+): 이 기기에 저장 -----
+  const syncFontStep = () => {
+    els.intro.querySelector('[data-fs="-1"]').disabled = ruleScale() <= RULE_SCALE.min + 1e-9;
+    els.intro.querySelector('[data-fs="1"]').disabled = ruleScale() >= RULE_SCALE.max - 1e-9;
+  };
+  els.intro.querySelectorAll('[data-fs]').forEach((b) =>
+    b.addEventListener('click', () => {
+      setRuleScale(ruleScale() + Number(b.dataset.fs) * RULE_SCALE.step);
+      syncFontStep();
+    }),
+  );
+  syncFontStep();
+
+  // ----- 낱말 풀이: 굵게 + 밑줄 낱말을 누르면 설명 상자, 상자 밖을 누르면 닫힘 -----
+  const openTerm = (el) => {
+    const g = GLOSSARY[Number(el.dataset.term)];
+    if (!g) return;
+    const box = termPop();
+    box.innerHTML = `<b>${escHtml(g.term)}</b> <span class="muted">Rule ${escHtml(g.rule)}</span><p>${escHtml(g.text)}</p>`;
+    box.hidden = false;
+    const r = el.getBoundingClientRect();
+    const w = Math.min(300, innerWidth - 24);
+    box.style.width = `${w}px`;
+    box.style.left = `${Math.round(Math.min(Math.max(r.left + r.width / 2 - w / 2, 12), innerWidth - w - 12))}px`;
+    const below = r.bottom + 8;
+    box.style.top = `${Math.round(below + box.offsetHeight > innerHeight - 8 ? Math.max(8, r.top - box.offsetHeight - 8) : below)}px`;
+  };
+  list.addEventListener('click', (e) => {
+    const t = e.target instanceof Element ? e.target.closest('.term') : null;
+    if (!t || String(getSelection?.() ?? '')) return;
+    e.stopPropagation(); // 책장 넘기기 · 바깥 클릭 닫기로 가지 않게
+    openTerm(t);
+  });
+  list.addEventListener('keydown', (e) => {
+    const t = e.target instanceof Element ? e.target.closest('.term') : null;
+    if (t && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      openTerm(t);
+    }
+  });
+
   // ----- 형광펜 -----
   const pop = highlightPop();
   let pending = null; // { mode: 'add', key, start, end } | { mode: 'del', key, at }
@@ -893,7 +971,7 @@ function renderRulesPage(focusNo) {
   };
   // 칠한 곳을 누르면 '지우기'
   list.addEventListener('click', (e) => {
-    const mark = e.target instanceof Element ? e.target.closest('mark.hl') : null;
+    const mark = e.target instanceof Element && !e.target.closest('.term') ? e.target.closest('mark.hl') : null;
     if (!mark) {
       if (pending?.mode === 'del') hidePop();
       return;
@@ -908,7 +986,7 @@ function renderRulesPage(focusNo) {
     marks = pending.mode === 'add' ? addHighlight(marks, key, text, pending.start, pending.end) : removeHighlight(marks, key, text, pending.at);
     store.set(HIGHLIGHT_KEY, JSON.stringify(marks));
     els.intro.querySelectorAll(`li[data-line="${key}"]`).forEach((li) => {
-      li.innerHTML = markedHtml(text, marks[key], escHtml);
+      li.innerHTML = wrapTerms(markedHtml(text, marks[key], escHtml));
     });
     getSelection()?.removeAllRanges();
     hidePop();
@@ -919,7 +997,7 @@ function renderRulesPage(focusNo) {
     return e.clientX - r.left < r.width / 2 ? -1 : 1;
   };
   const canTurn = (d) => !$('#rule-pager').hidden && (d < 0 ? page > 0 : page < pages.length - 1);
-  const onControl = (e) => e.target instanceof Element && e.target.closest('a, button, input, summary, details, mark.hl');
+  const onControl = (e) => e.target instanceof Element && e.target.closest('a, button, input, summary, details, mark.hl, .term');
   sheet.addEventListener('click', (e) => {
     if (onControl(e) || String(getSelection?.() ?? '')) return;
     const d = sideOf(e);

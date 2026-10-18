@@ -649,7 +649,7 @@ body[data-game='pass'] .stage-brief {
 
 /* ---------- 규칙 사전 ---------- */
 .tabs .rules-tab { margin-left: auto; }
-.rule-search { width: 100%; font: inherit; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); margin: 8px 0; }
+.rule-search { flex: 1; min-width: 0; width: 100%; font: inherit; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); margin: 0; }
 .rule-list { display: grid; gap: 6px; }
 /* 규칙 카드 글씨 크기: --rule-scale 하나로 (안쪽은 em 이라 함께 줄어든다) */
 :root { --rule-scale: 0.6; }
@@ -678,7 +678,7 @@ body[data-game='pass'] .stage-brief {
 .dev-priority .n { color: #b5485c; font-weight: 700; font-variant-numeric: tabular-nums; }
 .lock-note:empty, .try-msg:empty { display: none; }
 .rule-game.dev { color: var(--muted); font-weight: 600; }
-.rule-game.dev small { font-size: 0.72rem; }
+.rule-game.dev small { font-size: 0.85em; }
 
 /* 게임 소개: 이런 분께 추천 */
 .audience { margin: -4px 0 12px; padding: 6px 12px; border-radius: 10px; background: var(--warm); font-size: 0.86rem; }
@@ -968,3 +968,21 @@ body[data-page='hub'] #intro .admin-box, body[data-page='hub'] #intro .brag-list
 .report-dialog, .help-dialog, .install-help { background: var(--card); color: var(--ink); border-radius: 18px; }
 .report-dialog textarea { background: var(--surface); color: var(--ink); }
 .foot-lines { text-align: left; }
+
+/* 규칙 사전: 찾기 + 글자 크기 */
+.rule-tools { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+.font-step { display: flex; gap: 4px; flex: none; }
+.font-step .btn { padding: 8px 10px; }
+/* 규칙 카드 안의 작은 글씨(규정집 쪽 · 개발 중)도 글자 크기를 따라가게 */
+.rule-card .small { font-size: 0.85em; }
+
+/* 낱말 풀이 (굵게 + 밑줄, 누르면 설명 상자) */
+.term { font-weight: 800; text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1.5px; cursor: pointer; border-radius: 3px; }
+.term:hover, .term:focus-visible { background: var(--tab-on); }
+.term-pop {
+  position: fixed; z-index: 60; padding: 10px 12px; border-radius: 12px; background: var(--card); color: var(--ink);
+  border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16); font-size: 13px; line-height: 1.55;
+}
+.term-pop[hidden] { display: none; }
+.term-pop .muted { font-size: 11px; }
+.term-pop p { margin: 4px 0 0; }
