@@ -99,9 +99,6 @@ a { color: var(--good); }
 .top-btn:hover { background: rgba(255, 255, 255, 0.1); }
 .top-btn[aria-current='page'] { background: var(--lime); color: var(--forest); }
 .top-btn[hidden] { display: none; }
-@media (max-width: 520px) {
-  .top-btn span { display: none; } /* 폰: 아이콘만 */
-}
 
 /* 오류·아이디어 신고 창 */
 .report-dialog { width: min(440px, calc(100% - 32px)); border: 0; border-radius: var(--radius); padding: 20px; }
@@ -324,7 +321,7 @@ body[data-orient='portrait'] .preview-random { aspect-ratio: 4 / 3; }
 .foot p { margin: 2px 0; }
 .foot a { color: inherit; }
 
-@media (max-width: 720px) {
+@container (max-width: 720px) {
   .card { padding: 16px; }
   .picker { grid-template-columns: 1fr; }
 }
@@ -868,8 +865,37 @@ mark.hl { background: linear-gradient(transparent 35%, #b9e6a0 35%, #b9e6a0 92%,
 .cheer-box .cheer-title { font-weight: 800; font-size: 1.05rem; }
 :root[data-theme='dark'] .cheer-box { color: #f2dca0; }
 
-/* ---------- 메뉴: PC는 위쪽 탭, 폰은 동아리 앱처럼 아래쪽 탭 ---------- */
-.mainnav { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+/* ---------- 화면 틀: 동아리 앱처럼 위쪽 바 · 메뉴는 그대로, 가운데만 스크롤 ----------
+   가로 화면은 16:10, 세로 화면은 9:16 비율의 틀 하나씩. 창이 틀보다 크면(PC · 태블릿) 가운데에 띄우고,
+   폰은 화면 전체가 곧 틀이다. 세로 틀은 메뉴가 아래쪽 탭, 가로 틀은 위쪽 탭. */
+html, body { height: 100%; }
+body { overflow: hidden; display: grid; place-items: center; }
+.app {
+  --frame-margin: 0px;
+  --frame-ratio: 1.6; /* 가로 16:10 */
+  --max-w: 1280px;
+  position: relative; display: flex; flex-direction: column; overflow: hidden;
+  width: min(100vw - 2 * var(--frame-margin), (100dvh - 2 * var(--frame-margin)) * var(--frame-ratio), var(--max-w));
+  height: min(100dvh - 2 * var(--frame-margin), (100vw - 2 * var(--frame-margin)) / var(--frame-ratio), var(--max-w) / var(--frame-ratio));
+  background: var(--bg);
+}
+@media (orientation: portrait) {
+  .app { --frame-ratio: 0.5625; --max-w: 460px; } /* 세로 9:16 */
+}
+@media (hover: hover) and (pointer: fine) and (min-width: 600px) {
+  html, body { background: #e8ece5; } /* 틀 바깥 (동아리 앱 PC 화면과 같은 색) */
+  :root[data-theme='dark'] body { background: #08110c; }
+  .app { --frame-margin: 25px; border-radius: 20px; box-shadow: 0 0 30px rgba(0, 0, 0, 0.08); }
+}
+/* 폰 · 태블릿(터치): 화면 전체를 틀로 */
+@media (hover: none), (pointer: coarse) {
+  .app { width: 100vw; height: 100dvh; border-radius: 0; }
+}
+.app > .topbar, .app > .mainnav { flex: none; }
+.scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; container-type: inline-size; }
+
+/* 메뉴: 가로 틀은 위쪽 탭 */
+.mainnav { display: flex; gap: 6px; padding: 10px 16px 0; width: 100%; max-width: 952px; margin: 0 auto; }
 .mainnav a {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px;
   background: var(--card); color: var(--muted); text-decoration: none; font-weight: 700; box-shadow: var(--shadow);
@@ -877,10 +903,10 @@ mark.hl { background: linear-gradient(transparent 35%, #b9e6a0 35%, #b9e6a0 92%,
 .mainnav a[aria-current='page'] { background: var(--tab); color: var(--forest); }
 :root[data-theme='dark'] .mainnav a[aria-current='page'] { color: var(--lime); }
 .mainnav a[data-nav='club'] { margin-left: auto; }
-@media (max-width: 720px) {
+/* 세로 틀: 아래쪽 탭 (동아리 앱처럼) */
+@media (orientation: portrait) {
   .mainnav {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; margin: 0;
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    order: 3; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; max-width: none; margin: 0;
     padding: 8px 7px max(10px, env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--line);
   }
   .mainnav a { flex-direction: column; gap: 4px; padding: 8px 2px; font-size: 11px; font-weight: 600; box-shadow: none; background: transparent; color: #8b9b8f; }
@@ -888,10 +914,10 @@ mark.hl { background: linear-gradient(transparent 35%, #b9e6a0 35%, #b9e6a0 92%,
   .mainnav a[aria-current='page'] { background: #e6f0e7; color: var(--forest); }
   :root[data-theme='dark'] .mainnav a[aria-current='page'] { background: var(--tab); }
   .mainnav a[data-nav='club'] { margin-left: 0; }
-  body { padding-bottom: 76px; } /* 아래쪽 탭에 가리지 않게 */
-  body:has(#stage:not([hidden])) .mainnav { display: none; } /* 게임 중에는 숨긴다 */
-  body:has(#stage:not([hidden])) { padding-bottom: 0; }
+  .top-btn span { display: none; } /* 세로 틀의 위쪽 바는 아이콘만 */
+  .tiles { grid-template-columns: 1fr 1fr; }
 }
+.app:has(#stage:not([hidden])) .mainnav { display: none; } /* 게임 중에는 메뉴를 숨긴다 */
 
 /* ---------- 홈 ---------- */
 .hero { background: var(--forest); color: #fff; padding: 22px; border-radius: 17px; margin: 0 0 14px; }
@@ -915,9 +941,6 @@ mark.hl { background: linear-gradient(transparent 35%, #b9e6a0 35%, #b9e6a0 92%,
 .tile-ico { font-size: 22px; line-height: 1; color: var(--forest); }
 :root[data-theme='dark'] .tile-ico { color: var(--lime); }
 .tile.wide { grid-column: 1 / -1; }
-@media (max-width: 720px) {
-  .tiles { grid-template-columns: 1fr 1fr; }
-}
 .paper { display: block; background: var(--card); border-radius: var(--radius); padding: 17px; margin: 0 0 12px; box-shadow: var(--shadow); color: var(--ink); }
 .club-card { display: flex; align-items: center; gap: 12px; text-decoration: none; }
 .club-card > span:nth-child(2) { display: grid; flex: 1; }

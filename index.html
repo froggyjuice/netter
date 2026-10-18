@@ -34,6 +34,7 @@
     </script>
   </head>
   <body>
+    <div class="app" id="app">
     <header class="topbar">
       <a href="#/home" class="brand" id="brand" aria-label="NETTER 놀이터 홈">
         <img src="/logo.png" alt="" width="40" height="40" />
@@ -46,14 +47,15 @@
         <button class="top-btn theme-btn" id="btn-theme" type="button" title="화면 모드: 밝게 · 어둡게"></button>
       </div>
     </header>
+    <nav class="mainnav" id="mainnav" aria-label="메뉴">
+      <a href="#/home" data-nav="home" data-icon="House"><span>홈</span></a>
+      <a href="#/snake" data-nav="play" data-icon="Gamepad2"><span>놀이터</span></a>
+      <a href="#/rules" data-nav="rules" data-icon="BookOpen"><span>규칙 사전</span></a>
+      <a href="https://netter-app-one.vercel.app/" target="_blank" rel="noopener" data-nav="club" data-icon="CalendarDays" title="동아리 앱 (새 탭): 훈련 일정 · 참석 투표 · 공지"><span>동아리 앱 ↗</span></a>
+    </nav>
 
+    <div class="scroll" id="scroll">
     <main class="wrap">
-      <nav class="mainnav" id="mainnav" aria-label="메뉴">
-        <a href="#/home" data-nav="home" data-icon="House"><span>홈</span></a>
-        <a href="#/snake" data-nav="play" data-icon="Gamepad2"><span>놀이터</span></a>
-        <a href="#/rules" data-nav="rules" data-icon="BookOpen"><span>규칙 사전</span></a>
-        <a href="https://netter-app-one.vercel.app/" target="_blank" rel="noopener" data-nav="club" data-icon="CalendarDays" title="동아리 앱 (새 탭): 훈련 일정 · 참석 투표 · 공지"><span>동아리 앱 ↗</span></a>
-      </nav>
       <p class="play-tagline" id="play-tagline" hidden></p>
       <nav class="tabs" id="tabs" aria-label="게임 선택"></nav>
 
@@ -206,6 +208,8 @@
       <p class="muted">비공식 학습용 · World Netball 2024 규칙 기준 · <a href="#/admin">운영진</a></p>
       <p class="signature">made by 굴🐸</p>
     </footer>
+    </div>
+    </div>
 
     <script type="module" src="/src/main.js"></script>
   </body>

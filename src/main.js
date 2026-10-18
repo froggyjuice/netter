@@ -36,6 +36,8 @@ import {
 } from './ui/rhythm-ui.js';
 
 const $ = (sel) => document.querySelector(sel);
+// 화면 틀(.app) 안에서 위쪽 바 · 메뉴는 그대로, 이 영역만 스크롤된다 (동아리 앱처럼)
+const scroller = $('#scroll');
 
 // 오류 자동 기록 (/api/log): 닉네임·이름은 보내지 않고 화면 상황만. 한 세션 최대 5개
 const errorLog = installErrorLogging({
@@ -235,7 +237,7 @@ function route() {
     $('#btn-board').setAttribute('aria-current', 'false');
     const ctx = { hub, showToast, todayRule: { html: todayRuleHtml, setup: () => setupTodayRule(null) } };
     ({ home: renderHome, admin: renderAdmin })[hubPage](els.intro, ctx);
-    window.scrollTo(0, 0);
+    scroller.scrollTo(0, 0);
     return;
   }
   const onBoard = id === 'board'; // 랭킹·댓글 페이지
@@ -248,7 +250,7 @@ function route() {
   if (onBoard) {
     renderTabs(null);
     board.show();
-    window.scrollTo(0, 0);
+    scroller.scrollTo(0, 0);
     return;
   }
   // 넷볼 규칙 사전: #/rules · #/rules/9 (9장이 있는 쪽으로 바로 이동)
@@ -264,7 +266,7 @@ function route() {
   document.body.dataset.game = current.id; // 게임별 화면(코트 비율·버튼) 구분
   renderTabs(current.id);
   renderIntro();
-  if (wasPlaying) window.scrollTo(0, 0); // 게임 화면에서 돌아오면 맨 위(포지션 선택)부터 보여준다
+  if (wasPlaying) scroller.scrollTo(0, 0); // 게임 화면에서 돌아오면 맨 위(포지션 선택)부터 보여준다
 }
 window.addEventListener('hashchange', route);
 
@@ -694,6 +696,7 @@ document.addEventListener('selectionchange', () => rulesOnSelect?.());
 const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 /** 형광펜 버튼 (칠하기 · 지우기): 페이지에 하나만 두고 글자 아래에 띄운다 */
 let hlPop = null;
+scroller.addEventListener('scroll', () => hlPop && (hlPop.hidden = true), { passive: true });
 function highlightPop() {
   if (!hlPop) {
     hlPop = Object.assign(document.createElement('button'), { type: 'button', className: 'hl-pop', hidden: true });
@@ -794,7 +797,8 @@ function renderRulesPage(focusNo) {
     }
     // 책장이 길어서, 3D 시점을 화면에 보이는 부분의 가운데에 둔다
     const r = book.getBoundingClientRect();
-    const mid = (Math.max(r.top, 0) + Math.min(r.bottom, innerHeight)) / 2 - r.top;
+    const view = scroller.getBoundingClientRect();
+    const mid = (Math.max(r.top, view.top) + Math.min(r.bottom, view.bottom)) / 2 - r.top;
     book.style.perspectiveOrigin = `50% ${Math.round(mid)}px`;
     let leaf;
     if (dir > 0) {
@@ -824,7 +828,7 @@ function renderRulesPage(focusNo) {
     page = next;
     // 아래쪽 번호를 눌렀으면 그 자리에서 책장을 넘긴 뒤 책 맨 위로
     flip(dir, () => {
-      if (scroll && book.getBoundingClientRect().top < 0) book.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      if (scroll && book.getBoundingClientRect().top < scroller.getBoundingClientRect().top) book.scrollIntoView({ block: 'start', behavior: 'smooth' });
     });
     $('#rule-pager').hidden = false;
     els.intro.querySelectorAll('#rule-pager [data-page]').forEach((b) => b.setAttribute('aria-current', String(Number(b.dataset.page) === page)));
@@ -948,7 +952,7 @@ function renderRulesPage(focusNo) {
       setTimeout(() => el?.classList.add('flash'), 450);
     }, 0);
   } else {
-    window.scrollTo(0, 0);
+    scroller.scrollTo(0, 0);
   }
 }
 
@@ -1154,7 +1158,7 @@ function fitCourt() {
   const above = wrapRect.top - stageTop + 8; // 8 = 게임 카드 위 여백(scroll-margin)
   const toastSpace = parseFloat(getComputedStyle(els.toast).minHeight) || 0;
   const below = els.toast.getBoundingClientRect().top - wrapRect.bottom + toastSpace + 12; // 방향 버튼(아래에 있을 때)·안내 줄
-  const viewH = window.visualViewport?.height ?? window.innerHeight;
+  const viewH = scroller.clientHeight; // 화면 틀 안의 스크롤 영역 높이
   const maxW = play.clientWidth - (sideBySide ? dpad.offsetWidth + 12 : 0);
   const w = Math.max(160, Math.min(maxW, (viewH - above - below) * ratio));
   wrap.style.width = `${Math.floor(w)}px`;
