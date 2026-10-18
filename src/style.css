@@ -530,8 +530,8 @@ body[data-orient='portrait'] .preview canvas { width: auto; max-width: 100%; max
 
 /* ---------- 리듬 슈팅 ---------- */
 /* 골 서드 화면 (15.25m × 10.17m) — 가로·세로 화면 모두 같은 비율 */
-body[data-game='rhythm'] .canvas-wrap,
-body[data-game='rhythm'][data-orient='portrait'] .canvas-wrap { aspect-ratio: 1525 / 1017; }
+body[data-game='rhythm'] .canvas-wrap { aspect-ratio: 1525 / 1017; }
+body[data-game='rhythm'][data-orient='portrait'] .canvas-wrap { aspect-ratio: 1525 / 2034; } /* 세로: 센터 서드까지 */
 body[data-game='rhythm'] .dpad { display: none; }
 /* 슛·패스 버튼: 리듬 슈팅에서만, 모든 기기에서 보인다 (노트북은 ↑·↓ 키로도) */
 .rpad { display: none; }

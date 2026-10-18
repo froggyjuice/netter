@@ -32,7 +32,7 @@ import {
   RHYTHM_BADGES, rhythmBook, parseRhythmSave, applyRhythmResult, bestFor, serializeRhythmSave,
 } from './games/rhythm-records.js';
 import {
-  RHYTHM_POSITIONS, RHYTHM_RATIO, RHYTHM_BUTTONS, rhythmModeOf,
+  RHYTHM_POSITIONS, RHYTHM_RATIO, RHYTHM_RATIO_PORTRAIT, RHYTHM_BUTTONS, rhythmModeOf,
   rhythmRulesHtml, rhythmHelpHtml, rhythmReviewRows, rhythmHooks,
 } from './ui/rhythm-ui.js';
 
@@ -1234,7 +1234,8 @@ function fitCourt() {
   const dpad = isRhythm() ? $('#rpad') : isPass() ? $('#ppad') : $('#dpad'); // 방향 버튼 (리듬 슈팅·패스 퍼즐은 각자 버튼)
   const dpadShown = getComputedStyle(dpad).display !== 'none';
   const sideBySide = dpadShown && getComputedStyle(play).display === 'flex'; // 폰 가로: 버튼이 옆에
-  const ratio = isRhythm() ? RHYTHM_RATIO : document.body.dataset.orient === 'portrait' ? 0.5 : 2; // 너비 ÷ 높이
+  const portrait = document.body.dataset.orient === 'portrait';
+  const ratio = isRhythm() ? (portrait ? RHYTHM_RATIO_PORTRAIT : RHYTHM_RATIO) : portrait ? 0.5 : 2; // 너비 ÷ 높이
 
   const stageTop = els.stage.getBoundingClientRect().top;
   const wrapRect = wrap.getBoundingClientRect();
@@ -1633,6 +1634,7 @@ async function startRhythm(choicePos) {
     parent: els.parent,
     position: pos,
     difficulty: rhythmDiff,
+    orientation: orientationNow(),
     hooks: {
       ...rhythmHooks({ showToast, ruleLog: () => ruleLog, audio }),
       onHud: (snap) => {

@@ -1,6 +1,6 @@
 // 리듬 슈팅 화면(Phaser). 규칙은 rhythm-logic.js(공격 GS·GA) · rhythm-defence-logic.js(수비 GK·GD),
 // 이 파일은 그리기와 입력만 담당한다.
-// 골 서드를 골라인이 위에 오도록 보여준다 (가로·세로 화면 모두 같은 모양, 15.25m × 10.17m).
+// 골 서드를 골라인이 위에 오도록 보여준다 (15.25m × 10.17m). 세로 화면은 아래로 센터 서드까지 보여 줘서 세로로 길게 (15.25m × 20.34m).
 import Phaser from 'phaser';
 import { THEME, hex, FONT } from '../shared/theme.js';
 import { drawFace, drawGhost, drawBall } from '../shared/sprites.js';
@@ -17,7 +17,9 @@ import {
 
 const M = 40; // 1m = 40px
 const W = Math.round(GOAL_THIRD.w * M);
-const H = Math.round(GOAL_THIRD.h * M);
+const THIRD_H = Math.round(GOAL_THIRD.h * M); // 골 서드 깊이(px) — 경기는 여기서만
+/** 화면 높이: 가로는 골 서드만, 세로는 센터 서드까지 */
+const heightFor = (o) => Math.round(GOAL_THIRD.h * (o === 'portrait' ? 2 : 1) * M);
 const RING_R = 0.5 * M; // 링을 실제(지름 38cm)보다 조금 크게 그린다
 
 // e.code 를 쓰므로 한글 입력기가 켜져 있어도 동작한다
@@ -61,7 +63,9 @@ const lerp = (a, b, k) => a + (b - a) * k;
  *        · onQuarterEnd(info) · onBreakTick(ms) · onQuarterStart(info) · onOver(result)
  * @returns 존 스네이크와 같은 컨트롤러 ({ input(action), setPaused, isPaused, nextQuarter, inBreak, setOrientation, destroy })
  */
-export function startRhythm({ parent, position, difficulty = 'normal', hooks = {} }) {
+export function startRhythm({ parent, position, difficulty = 'normal', orientation = 'landscape', hooks = {} }) {
+  let orient = orientation === 'portrait' ? 'portrait' : 'landscape';
+  let H = heightFor(orient);
   const match = createMatch({ quarterMs: RHYTHM_QUARTER_MS });
   const mode = DEFENDERS.includes(position) ? 'defence' : 'attack';
   const L = LOGIC[mode];
@@ -185,7 +189,7 @@ export function startRhythm({ parent, position, difficulty = 'normal', hooks = {
       this.gapLabel = label(10, 3, '#6b7280').setText('0.9m');
       this.reboundLabel = label(12, 8, '#3f63a8').setText('리바운드! 아무 버튼').setStroke('#ffffff', 4);
       this.hint = this.add
-        .text(W / 2, H * 0.62, '', {
+        .text(W / 2, THIRD_H * 0.62, '', {
           fontFamily: FONT, fontSize: '20px', fontStyle: 'bold', color: hex(THEME.ink),
           backgroundColor: 'rgba(251,254,249,0.92)', padding: { x: 14, y: 6 },
         })
@@ -229,7 +233,16 @@ export function startRhythm({ parent, position, difficulty = 'normal', hooks = {
       g.beginPath();
       g.arc(post.x, post.y, GOAL_THIRD.circleR * M, 0, Math.PI, false);
       g.strokePath();
-      // 테두리: 위 = 골라인, 아래 = 센터 서드와의 경계선
+      if (H > THIRD_H) {
+        // 세로 화면: 아래는 센터 서드 (보기만 하는 곳, 살짝 어둡게) · 서드 경계선 · 센터 서클
+        g.fillStyle(THEME.forbidden, 0.55);
+        g.fillRect(0, THIRD_H, W, H - THIRD_H);
+        g.lineStyle(4, THEME.line, 1);
+        g.lineBetween(0, THIRD_H, W, THIRD_H);
+        g.lineStyle(3, THEME.line, 1);
+        g.strokeCircle(W / 2, (GOAL_THIRD.h * 1.5) * M, 0.45 * M * 2.2); // 센터 서클: 코트 한가운데(골라인에서 15.25m), 알아보게 키움
+      }
+      // 테두리: 위 = 골라인, 아래 = 센터 서드와의 경계선 (세로 화면은 센터 서드 끝)
       g.lineStyle(4, THEME.border, 1);
       g.strokeRect(2, 2, W - 4, H - 4);
       // 골대
@@ -242,13 +255,20 @@ export function startRhythm({ parent, position, difficulty = 'normal', hooks = {
         .text(post.x + GOAL_THIRD.circleR * M * 0.72, 16, '골 서클', { fontFamily: FONT, fontSize: '13px', fontStyle: 'bold', color: '#7a5a00' })
         .setOrigin(0.5)
         .setAlpha(0.8);
-      this.add
-        .text(46, H - 14, '↓ 센터 서드', { fontFamily: FONT, fontSize: '12px', fontStyle: 'bold', color: hex(THEME.ink) })
-        .setOrigin(0.5)
-        .setAlpha(0.35);
+      if (H > THIRD_H) {
+        this.add
+          .text(W / 2, THIRD_H + (H - THIRD_H) * 0.25, '센터 서드', { fontFamily: FONT, fontSize: '22px', fontStyle: 'bold', color: hex(THEME.ink) })
+          .setOrigin(0.5)
+          .setAlpha(0.3);
+      } else {
+        this.add
+          .text(46, H - 14, '↓ 센터 서드', { fontFamily: FONT, fontSize: '12px', fontStyle: 'bold', color: hex(THEME.ink) })
+          .setOrigin(0.5)
+          .setAlpha(0.35);
+      }
       // 초록 영역 = 골 서드 (골 서클 밖)
       this.add
-        .text(W - 14, H - 14, '골 서드', { fontFamily: FONT, fontSize: '15px', fontStyle: 'bold', color: hex(THEME.border) })
+        .text(W - 14, THIRD_H - 14, '골 서드', { fontFamily: FONT, fontSize: '15px', fontStyle: 'bold', color: hex(THEME.border) })
         .setOrigin(1, 1)
         .setAlpha(0.7);
     }
@@ -710,7 +730,15 @@ export function startRhythm({ parent, position, difficulty = 'normal', hooks = {
     isPaused: () => paused,
     nextQuarter,
     inBreak: () => match.phase === 'break',
-    setOrientation() {}, // 골 서드 화면은 가로·세로 모양이 같다
+    setOrientation(o) {
+      // 세로 ↔ 가로: 화면 높이만 바뀐다 (경기 상태는 그대로, 그림만 새로)
+      const next = o === 'portrait' ? 'portrait' : 'landscape';
+      if (destroyed || next === orient) return;
+      orient = next;
+      H = heightFor(orient);
+      teardown();
+      build();
+    },
     destroy() {
       destroyed = true;
       window.removeEventListener('keydown', onKey);

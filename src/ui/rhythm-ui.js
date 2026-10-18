@@ -19,6 +19,8 @@ export const RHYTHM_HOW = Object.freeze({
 });
 /** 화면 비율 (너비 ÷ 높이): 골 서드 15.25m × 10.17m */
 export const RHYTHM_RATIO = GOAL_THIRD.w / GOAL_THIRD.h;
+/** 세로 화면: 센터 서드까지 보여 줘서 세로로 길게 */
+export const RHYTHM_RATIO_PORTRAIT = GOAL_THIRD.w / (GOAL_THIRD.h * 2);
 export { DIFFICULTY, DIFFICULTY_KEYS };
 
 
