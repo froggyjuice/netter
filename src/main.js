@@ -1243,7 +1243,10 @@ function fitCourt() {
   const toastSpace = parseFloat(getComputedStyle(els.toast).minHeight) || 0;
   const toastTop = els.toast.getBoundingClientRect().top;
   // 방향 버튼(아래에 있을 때)·안내 줄. 안내 줄이 코트 옆에 있으면(폰 가로 존 스네이크) 아래 여백만
-  const below = toastTop >= wrapRect.bottom - 1 ? toastTop - wrapRect.bottom + toastSpace + 12 : 12;
+  // 게임 카드 아래쪽 안쪽 여백 · 바깥 여백 · 본문 아래 여백까지 빼야 스크롤이 생기지 않는다
+  const px = (el, k) => parseFloat(getComputedStyle(el)[k]) || 0;
+  const tail = px(els.stage, 'paddingBottom') + px(els.stage, 'marginBottom') + px(els.stage.parentElement, 'paddingBottom') + 4;
+  const below = (toastTop >= wrapRect.bottom - 1 ? toastTop - wrapRect.bottom + toastSpace : 0) + tail;
   const viewH = scroller.clientHeight; // 화면 틀 안의 스크롤 영역 높이
   const maxW = play.clientWidth - (sideBySide ? dpad.offsetWidth + 12 : 0);
   const w = Math.max(160, Math.min(maxW, (viewH - above - below) * ratio));

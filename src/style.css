@@ -1015,3 +1015,8 @@ body[data-page='hub'] #intro .admin-box, body[data-page='hub'] #intro .brag-list
   body[data-game='snake'] .stage .toasts { grid-area: toast; margin: 0; font-size: 0.75rem; }
   body[data-game='snake'] .stage .stage-brief { display: none; }
 }
+
+/* 게임 중(PC · 폰 모두): 위쪽 바 · 메뉴 · 게임 고르기 탭 · 소개 한 줄 · 아래 문구(made by)를 숨기고 게임 화면만 */
+body:has(#stage:not([hidden])) :is(.topbar, .mainnav, .tabs, .play-tagline, .foot, #board, #comments) { display: none !important; }
+body:has(#stage:not([hidden])) .wrap { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: 8px; }
+body:has(#stage:not([hidden])) .stage { margin-bottom: 0; }
