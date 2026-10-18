@@ -967,3 +967,4 @@ body[data-page='hub'] #intro .admin-box, body[data-page='hub'] #intro .brag-list
 /* 입력 칸 · 대화창: 동아리 앱처럼 둥근 흰 칸 */
 .report-dialog, .help-dialog, .install-help { background: var(--card); color: var(--ink); border-radius: 18px; }
 .report-dialog textarea { background: var(--surface); color: var(--ink); }
+.foot-lines { text-align: left; }
