@@ -653,14 +653,16 @@ body[data-game='pass'] .stage-brief {
 /* ---------- 규칙 사전 ---------- */
 .tabs .rules-tab { margin-left: auto; }
 .rule-search { width: 100%; font: inherit; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); margin: 8px 0; }
-.rule-list { display: grid; gap: 10px; }
-.rule-card { padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 2px solid var(--line); scroll-margin-top: 12px; }
+.rule-list { display: grid; gap: 6px; }
+/* 규칙 카드 글씨 크기: --rule-scale 하나로 (안쪽은 em 이라 함께 줄어든다) */
+:root { --rule-scale: 0.6; }
+.rule-card { padding: 8px 10px; border-radius: 12px; background: var(--surface); border: 2px solid var(--line); scroll-margin-top: 12px; font-size: calc(1rem * var(--rule-scale)); }
 .rule-card.focus { border-color: var(--accent); box-shadow: 0 0 0 3px #d7f0d7; }
-.rule-card h3 { margin: 0 0 6px; font-size: 1rem; }
-.rule-card .rule-no { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 0.75rem; margin-right: 4px; }
-.rule-card ul { margin: 0; padding-left: 18px; }
-.rule-card li { margin: 3px 0; font-size: 0.9rem; line-height: 1.5; }
-.rule-games { margin: 8px 0 0; font-size: 0.82rem; color: var(--muted); }
+.rule-card h3 { margin: 0 0 4px; font-size: 1.15em; }
+.rule-card .rule-no { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 0.8em; margin-right: 4px; }
+.rule-card ul { margin: 0; padding-left: 1.4em; }
+.rule-card li { margin: 2px 0; line-height: 1.55; }
+.rule-games { margin: 6px 0 0; font-size: 0.92em; color: var(--muted); }
 .rule-game { margin-right: 6px; color: var(--accent); font-weight: 700; text-decoration: none; }
 .review-rules .rule-more { margin-left: 6px; font-size: 0.75rem; color: var(--accent); text-decoration: none; }
 
@@ -787,10 +789,10 @@ a.rule-link:hover { color: var(--accent); text-decoration-style: solid; }
 .rule-card.flash { animation: rule-flash 0.6s ease-in-out 3; }
 @keyframes rule-flash {
   0%, 100% { background-color: var(--paper-card); box-shadow: 0 0 0 3px #d7f0d7; }
-  50% { background-color: #fff3c4; box-shadow: 0 0 0 6px #f2cf6b; }
+  50% { background-color: var(--flash-bg, #fff3c4); box-shadow: 0 0 0 6px #f2cf6b; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rule-card.flash { animation: none; background-color: #fff3c4; }
+  .rule-card.flash { animation: none; background-color: var(--flash-bg, #fff3c4); }
 }
 
 /* 넷볼 규칙 사전: 오늘의 규칙 한 줄 */
@@ -822,7 +824,7 @@ mark.hl { background: linear-gradient(transparent 35%, #b9e6a0 35%, #b9e6a0 92%,
 }
 .hl-pop[hidden] { display: none; }
 .hl-tip { margin: 6px 0 0; }
-.rule-src { margin: 6px 0 0; font-size: 0.85rem; }
+.rule-src { margin: 4px 0 0; font-size: 0.95em; }
 .rule-src summary { cursor: pointer; color: var(--warm-ink); font-weight: 700; }
 .rule-src ol { margin: 6px 0; padding-left: 1.4em; display: grid; gap: 4px; }
 .rule-src q { font-style: italic; color: var(--muted); }
@@ -843,7 +845,7 @@ mark.hl { background: linear-gradient(transparent 35%, #b9e6a0 35%, #b9e6a0 92%,
 :root[data-theme='dark'] .topbar { background: #0c1f15; }
 :root[data-theme='dark'] input, :root[data-theme='dark'] textarea, :root[data-theme='dark'] select { background: var(--surface); color: var(--ink); border-color: var(--line); }
 :root[data-theme='dark'] .book-page { box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4); border-left-color: #5b5037; }
-:root[data-theme='dark'] .rule-card.flash { background-color: #4a4126; }
+:root[data-theme='dark'] { --flash-bg: #4a4126; }
 :root[data-theme='dark'] mark.hl { background: linear-gradient(transparent 35%, #3f6b33 35%, #3f6b33 92%, transparent 92%); }
 :root[data-theme='dark'] .rule-pager .pg { color: var(--warm-ink); }
 :root[data-theme='dark'] .like-btn { background: var(--surface); }
