@@ -3,7 +3,7 @@
 import { POSITIONS, ZONE_NAMES } from '../shared/zones.js';
 import { THEME, hex } from '../shared/theme.js';
 import { createView } from '../shared/view-transform.js';
-import { drawCourtPreview } from './court-preview.js';
+import { drawCourtPreview, drawGoalGlow } from './court-preview.js';
 import { createTaste, steer, tasteStep, TASTE_MS, TASTE_TICK_MS } from '../games/snake-taste-logic.js';
 
 const CELL = 24; // drawCourtPreview 와 같은 해상도
@@ -21,6 +21,8 @@ export function startSnakeTaste({ canvas, position, orientation, onMessage = () 
   const view = createView(orientation);
   const bg = document.createElement('canvas');
   drawCourtPreview(bg, position, orientation); // 배경(구역·빨간 선)은 한 번만 그린다
+  cancelAnimationFrame(canvas._glowRaf ?? 0); // 미니 코트의 반짝임 그리기를 멈추고 맛보기가 이어서 그린다
+  canvas._glowRaf = 0;
   canvas.width = bg.width;
   canvas.height = bg.height;
   const ctx = canvas.getContext('2d');
@@ -89,6 +91,7 @@ export function startSnakeTaste({ canvas, position, orientation, onMessage = () 
 
   function draw(now) {
     ctx.drawImage(bg, 0, 0);
+    drawGoalGlow(ctx, orientation, now, CELL); // 게임과 같은 '우리 골' 반짝임
     if (flash && now < flash.until) {
       const c = Math.min(29, Math.max(0, flash.cell.c));
       const r = Math.min(14, Math.max(0, flash.cell.r));

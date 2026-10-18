@@ -515,7 +515,7 @@ export function startSnake({ parent, position, mode, orientation = 'landscape', 
           .setOrigin(0.5)
           .setDepth(1);
       }
-      const lp = at(COURT.cols - 2.1, COURT.rows / 2);
+      const lp = at(COURT.cols - 1.9, COURT.rows / 2 - 2.9); // 링 위쪽 (구역 숫자와 겹치지 않게)
       this.ourGoalLabel.setPosition(lp.x, lp.y).setAlpha(0.6 + 0.4 * pulse);
     }
 
